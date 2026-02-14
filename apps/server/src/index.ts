@@ -1,8 +1,34 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
+import { auth } from "./auth";
+import { sessionMiddleware } from "./middleware/auth";
 
-const app = new Hono();
+const app = new Hono<{
+  Variables: {
+    user: (typeof auth)["$Infer"]["Session"]["user"] | null;
+    session: (typeof auth)["$Infer"]["Session"]["session"] | null;
+  };
+}>();
 
+// CORS — before auth routes (see research Pitfall 1)
+app.use(
+  "/api/auth/*",
+  cors({
+    origin: process.env.WEB_URL || "http://localhost:3000",
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    credentials: true,
+  })
+);
+
+// Better Auth handler
+app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+// Session middleware for all other routes
+app.use("*", sessionMiddleware);
+
+// Health check
 app.get("/health", (c) => c.json({ status: "ok" }));
 
 const port = Number(process.env.PORT) || 3001;
