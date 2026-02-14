@@ -2,6 +2,7 @@
   "name": "@mycoach/server",
   "version": "0.1.0",
   "private": true,
+  "exports": { "./trpc": "./src/trpc/router.ts" },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
