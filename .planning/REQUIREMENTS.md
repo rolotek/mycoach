@@ -97,35 +97,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| AUTH-04 | — | Pending |
-| AUTH-05 | — | Pending |
-| COACH-01 | — | Pending |
-| COACH-02 | — | Pending |
-| COACH-03 | — | Pending |
-| COACH-04 | — | Pending |
-| COACH-05 | — | Pending |
-| MEM-01 | — | Pending |
-| MEM-02 | — | Pending |
-| MEM-03 | — | Pending |
-| MEM-04 | — | Pending |
-| AGENT-01 | — | Pending |
-| AGENT-02 | — | Pending |
-| AGENT-03 | — | Pending |
-| AGENT-04 | — | Pending |
-| EVOL-01 | — | Pending |
-| EVOL-02 | — | Pending |
-| EVOL-03 | — | Pending |
-| LLM-01 | — | Pending |
-| LLM-02 | — | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| COACH-01 | Phase 2 | Pending |
+| COACH-02 | Phase 2 | Pending |
+| COACH-03 | Phase 2 | Pending |
+| COACH-04 | Phase 2 | Pending |
+| COACH-05 | Phase 2 | Pending |
+| MEM-01 | Phase 2 | Pending |
+| MEM-02 | Phase 2 | Pending |
+| MEM-03 | Phase 2 | Pending |
+| MEM-04 | Phase 2 | Pending |
+| AGENT-01 | Phase 3 | Pending |
+| AGENT-02 | Phase 3 | Pending |
+| AGENT-03 | Phase 3 | Pending |
+| AGENT-04 | Phase 3 | Pending |
+| EVOL-01 | Phase 4 | Pending |
+| EVOL-02 | Phase 4 | Pending |
+| EVOL-03 | Phase 4 | Pending |
+| LLM-01 | Phase 1 | Pending |
+| LLM-02 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23 ⚠️
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-14*
-*Last updated: 2026-02-14 after initial definition*
+*Last updated: 2026-02-14 after roadmap creation*
