@@ -82,6 +82,8 @@ A single AI that knows your world deeply enough to help you think through anythi
 | Swappable LLM backends | Avoids vendor lock-in; different tasks may benefit from different models | — Pending |
 | React Native + Node.js | Shared TypeScript stack; React Native enables future mobile from same codebase | — Pending |
 | Orchestrator engine stable, behavior dynamic | Core routing logic needs reliability; personality and knowledge should personalize per user | — Pending |
+| Render for v1 hosting | Fastest path to working product for 2 users; git-push deploy, managed Postgres, zero DevOps. Docker/self-hosted packaging deferred to v2 for users wanting their own instances | — Pending |
+| Hono + tRPC over RedwoodJS | Lightweight, full control over orchestration and LLM streaming; RedwoodJS's GraphQL layer adds friction for streaming-heavy use case | — Pending |
 
 ---
-*Last updated: 2026-02-14 after initialization*
+*Last updated: 2026-02-14 after hosting decision*
