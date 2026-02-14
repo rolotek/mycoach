@@ -28,11 +28,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User session persists across browser refreshes without re-authentication
   3. Each user sees only their own data -- profiles, conversations, and settings are completely isolated between accounts
   4. System can make LLM calls through at least two different providers (e.g., Claude and Ollama) and user can select which provider to use
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Monorepo scaffold + PostgreSQL + Drizzle DB + Hono server skeleton
+- [ ] 01-02-PLAN.md — Better Auth (email/password + OAuth) + tRPC router with auth context
+- [ ] 01-03-PLAN.md — AI SDK LLM provider registry (Anthropic, OpenAI, Ollama)
+- [ ] 01-04-PLAN.md — Frontend auth pages + settings UI + end-to-end verification
 
 ### Phase 2: Coaching & Memory
 **Goal**: Users have a persistent, context-aware coaching relationship that spans work and personal life
@@ -86,7 +88,7 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/4 | Planned | - |
 | 2. Coaching & Memory | 0/TBD | Not started | - |
 | 3. Agent System | 0/TBD | Not started | - |
 | 4. Agent Evolution | 0/TBD | Not started | - |
