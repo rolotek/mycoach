@@ -1,2 +1,10 @@
 .claude/settings.local.json
 .cursor/settings.local.json
+
+node_modules/
+.next/
+dist/
+.env
+.env.local
+.turbo/
+*.tsbuildinfo
