@@ -23,7 +23,7 @@ import { encrypt, decrypt } from "../crypto/encryption";
 import { validateApiKey } from "../llm/providers";
 import { seedStarterAgents } from "../agents/templates";
 import { checkAndEvolveAgent, saveAgentVersion } from "../agents/prompt-evolver";
-import { eq, and, desc, asc, sql, isNull, gte } from "drizzle-orm";
+import { eq, and, desc, asc, sql, isNull, gte, notInArray } from "drizzle-orm";
 import { updateSettingsSchema } from "@mycoach/shared";
 import { embedText } from "../memory/embeddings";
 
@@ -849,21 +849,67 @@ const agentRouter = t.router({
 
 // Phase 8: Projects
 const projectRouter = t.router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        description: projects.description,
-        status: projects.status,
-        dueDate: projects.dueDate,
-        createdAt: projects.createdAt,
-        updatedAt: projects.updatedAt,
-      })
-      .from(projects)
-      .where(eq(projects.userId, ctx.user.id))
-      .orderBy(desc(projects.updatedAt));
-  }),
+  list: protectedProcedure
+    .input(
+      z
+        .object({ showArchived: z.boolean().optional() })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const showArchived = input?.showArchived ?? false;
+      const statusFilter = showArchived
+        ? undefined
+        : notInArray(projects.status, ["completed", "archived"]);
+      const whereClause =
+        statusFilter == null
+          ? eq(projects.userId, ctx.user.id)
+          : and(eq(projects.userId, ctx.user.id), statusFilter);
+      return ctx.db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          status: projects.status,
+          dueDate: projects.dueDate,
+          pinnedAt: projects.pinnedAt,
+          createdAt: projects.createdAt,
+          updatedAt: projects.updatedAt,
+        })
+        .from(projects)
+        .where(whereClause)
+        .orderBy(desc(projects.pinnedAt), desc(projects.updatedAt));
+    }),
+  togglePin: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [existing] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+      const newPinnedAt =
+        existing.pinnedAt == null ? new Date() : null;
+      const [updated] = await ctx.db
+        .update(projects)
+        .set({
+          pinnedAt: newPinnedAt,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(projects.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        )
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

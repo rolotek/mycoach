@@ -8,6 +8,13 @@
       "when": 1771170510677,
       "tag": "0000_outstanding_hellion",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771190654556,
+      "tag": "0001_add_projects_pinned_at",
+      "breakpoints": true
     }
   ]
 }

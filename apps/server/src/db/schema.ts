@@ -213,6 +213,7 @@ export const projects = pgTable(
     description: text("description"),
     status: varchar("status", { length: 50 }).default("active").notNull(),
     dueDate: timestamp("due_date"),
+    pinnedAt: timestamp("pinned_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
