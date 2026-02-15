@@ -46,12 +46,13 @@ Plans:
   3. Coach produces structured outputs (decision frameworks, action items, summaries) when requested, and auto-detects whether to coach or produce structured output
   4. User can switch between coaching mode and task mode manually, overriding the system's auto-detection
   5. User can inspect what the system knows about them (extracted facts, profile, preferences) and correct inaccuracies
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md — Database schema (conversations, memories, documents, userFacts) + pgvector + embedding/chunking utilities
+- [ ] 02-02-PLAN.md — Streaming chat endpoint + RAG retrieval + mode detection + background fact extraction
+- [ ] 02-03-PLAN.md — Document upload/processing pipeline + tRPC CRUD for conversations, documents, and user facts
+- [ ] 02-04-PLAN.md — Chat UI + memory management page + documents page + end-to-end verification
 
 ### Phase 3: Agent System
 **Goal**: Users can delegate tasks to specialist agents through a chief-of-staff that suggests routing and awaits confirmation
@@ -89,6 +90,6 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Verification | - |
-| 2. Coaching & Memory | 0/TBD | Not started | - |
+| 2. Coaching & Memory | 0/4 | Planned | - |
 | 3. Agent System | 0/TBD | Not started | - |
 | 4. Agent Evolution | 0/TBD | Not started | - |
