@@ -12,6 +12,7 @@ import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import { trpcServer } from "@hono/trpc-server";
 import { auth } from "./auth";
+import { chatApp } from "./coaching/chat-route";
 import { sessionMiddleware } from "./middleware/auth";
 import { appRouter } from "./trpc/router";
 import { createContext } from "./trpc/context";
@@ -33,12 +34,17 @@ const app = new Hono<{
 // CORS — before auth routes (see research Pitfall 1)
 app.use("/api/auth/*", cors(corsOptions));
 app.use("/trpc/*", cors(corsOptions));
+app.use("/api/chat", cors(corsOptions));
+app.use("/api/documents/*", cors(corsOptions));
 
 // Better Auth handler
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // Session middleware for all other routes
 app.use("*", sessionMiddleware);
+
+// Chat (streaming) — after session
+app.route("", chatApp);
 
 // tRPC
 app.use(
