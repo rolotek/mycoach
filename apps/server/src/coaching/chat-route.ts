@@ -3,7 +3,7 @@ import { streamText, createAgentUIStream, createUIMessageStreamResponse } from "
 import { convertToModelMessages, tool } from "ai";
 import type { UIMessage } from "ai";
 import type { ExecutedDispatchResult } from "../agents/resolve-approved-dispatch";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { conversations, userFacts, agents } from "../db/schema";
 import { getModel } from "../llm/providers";
@@ -132,7 +132,7 @@ chatApp.post("/api/chat", async (c) => {
   const userAgents = await db
     .select()
     .from(agents)
-    .where(eq(agents.userId, user.id));
+    .where(and(eq(agents.userId, user.id), isNull(agents.archivedAt)));
 
   if (userAgents.length > 0) {
     const executedResults = await resolveApprovedDispatchTools(
