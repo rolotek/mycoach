@@ -126,6 +126,7 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 6. API Key & Usage | 5/5 | Complete | 2026-02-15 |
 | 7. Friendlier errors & i18n | 0/4 | Planned | - |
 | 8. Projects | 4/8 | In progress | - |
+| 9. Rich Document Editor | 0/0 | Not planned | - |
 
 ### Phase 6: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
 
@@ -167,3 +168,9 @@ Plans:
 - [ ] 08-06-PLAN.md — Typed external links (auto-detect + icons) and direct document upload from project page
 - [ ] 08-07-PLAN.md — Section-level context (milestoneId on docs/links/conversations) and per-milestone chat threads
 - [ ] 08-08-PLAN.md — Context badge in chat UI and project threads in sidebar
+
+### Phase 9: Rich Document Editor — AI-assisted document authoring with block-based editing, version history, and export
+
+**Goal:** Users can create and edit rich documents within project sections using a block-based editor, collaborate with the AI coach to draft/rewrite/expand content, track version history and drafts, and export finished documents (PDF, DOCX). Project sections become editable workspaces, not just chat-only contexts.
+**Depends on:** Phase 8
+**Plans:** 0 plans
