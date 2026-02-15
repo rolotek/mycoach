@@ -23,7 +23,7 @@ import { encrypt, decrypt } from "../crypto/encryption";
 import { validateApiKey } from "../llm/providers";
 import { seedStarterAgents } from "../agents/templates";
 import { checkAndEvolveAgent, saveAgentVersion } from "../agents/prompt-evolver";
-import { eq, and, desc, asc, sql, isNull, gte, notInArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, isNull, isNotNull, gte, notInArray } from "drizzle-orm";
 import { updateSettingsSchema } from "@mycoach/shared";
 import { embedText } from "../memory/embeddings";
 
@@ -272,6 +272,33 @@ const conversationRouter = t.router({
       .from(conversations)
       .where(eq(conversations.userId, ctx.user.id))
       .orderBy(desc(conversations.updatedAt));
+  }),
+  listProjectThreads: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({
+        id: conversations.id,
+        title: conversations.title,
+        projectId: conversations.projectId,
+        projectName: projects.name,
+        milestoneId: conversations.milestoneId,
+        milestoneName: projectMilestones.title,
+        updatedAt: conversations.updatedAt,
+      })
+      .from(conversations)
+      .innerJoin(projects, eq(conversations.projectId, projects.id))
+      .leftJoin(
+        projectMilestones,
+        eq(conversations.milestoneId, projectMilestones.id)
+      )
+      .where(
+        and(
+          eq(conversations.userId, ctx.user.id),
+          isNotNull(conversations.projectId)
+        )
+      )
+      .orderBy(desc(conversations.updatedAt))
+      .limit(10);
+    return rows;
   }),
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))

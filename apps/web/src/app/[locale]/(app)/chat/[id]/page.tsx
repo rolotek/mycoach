@@ -12,6 +12,7 @@ import { MessageList, type MessageListMessage } from "../components/message-list
 import { ChatInput } from "../components/chat-input";
 import { ModeToggle } from "../components/mode-toggle";
 import { ConversationSidebar } from "../components/conversation-sidebar";
+import { ChatContextBadge } from "@/components/chat-context-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -121,6 +122,14 @@ export default function ChatIdPage() {
           </div>
           {!isTaskThread && <ModeToggle mode={mode} onChange={setMode} />}
         </header>
+        {!isTaskThread && (
+          <div className="shrink-0 px-4 pt-2">
+            <ChatContextBadge
+              projectId={projectId ?? (conv as { projectId?: string | null })?.projectId ?? null}
+              milestoneId={milestoneId ?? (conv as { milestoneId?: string | null })?.milestoneId ?? null}
+            />
+          </div>
+        )}
         {chatError && (
           <div
             role="alert"

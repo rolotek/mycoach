@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { authClient } from "@/lib/auth-client";
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const navKeys = [
 export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
+  const { data: projectThreads } = trpc.conversation.listProjectThreads.useQuery();
 
   return (
     <Sidebar>
@@ -79,6 +81,42 @@ export function AppSidebar() {
               })}
             </SidebarMenu>
           </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>{t("projectThreads")}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {projectThreads?.map((thread) => (
+                <SidebarMenuItem key={thread.id}>
+                  <SidebarMenuButton asChild isActive={pathname === `/chat/${thread.id}`}>
+                    <Link
+                      href={
+                        thread.projectId
+                          ? `/chat/${thread.id}?projectId=${encodeURIComponent(thread.projectId)}${thread.milestoneId ? `&milestoneId=${encodeURIComponent(thread.milestoneId)}` : ""}`
+                          : `/chat/${thread.id}`
+                      }
+                    >
+                      <FolderKanban className="h-4 w-4 shrink-0" />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm">
+                          {thread.title || "Untitled"}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {thread.projectName ?? ""}
+                          {thread.milestoneName ? ` > ${thread.milestoneName}` : ""}
+                        </span>
+                      </div>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+              {projectThreads !== undefined && projectThreads.length === 0 && (
+                <li className="px-2 py-1 text-xs text-muted-foreground">
+                  {t("noProjectThreads")}
+                </li>
+              )}
+            </SidebarMenu>
+          </SidebarContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="pb-14">

@@ -231,7 +231,12 @@
     "sectionDocs": "Section documents",
     "sectionLinks": "Section links",
     "attachDocToSection": "Attach doc to section...",
-    "addLinkToSection": "Add link to section"
+    "addLinkToSection": "Add link to section",
+    "usingContext": "Using",
+    "contextDocs": "docs",
+    "contextLinks": "links",
+    "projectThreads": "Project threads",
+    "noProjectThreads": "No project threads yet."
   },
   "sidebar": {
     "navigation": "Navigation",
@@ -242,7 +247,9 @@
     "documents": "Documents",
     "projects": "Projects",
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "projectThreads": "Project threads",
+    "noProjectThreads": "No project threads yet."
   },
   "theme": {
     "light": "Light",
