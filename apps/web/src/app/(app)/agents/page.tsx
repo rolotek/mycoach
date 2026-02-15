@@ -2,7 +2,32 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 
 export default function AgentsPage() {
   const utils = trpc.useUtils();
@@ -83,200 +108,160 @@ export default function AgentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-neutral-900">Agents</h1>
-            <p className="mt-1 text-neutral-600">
-              Your specialist agent library
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
+    <div className="max-w-5xl space-y-6 p-4 md:p-6">
+      <PageHeader
+        title="Agents"
+        description="Your specialist agent library"
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" />
             Create Agent
-          </button>
-        </div>
+          </Button>
+        }
+      />
 
-        {(showForm || editingId) && (
-          <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-            <h2 className="text-lg font-medium text-neutral-900">
-              {editingId ? "Edit Agent" : "New Agent"}
-            </h2>
-            <div className="mt-3 space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  maxLength={100}
-                  className="mt-1 w-full rounded border border-neutral-300 px-3 py-2"
-                  placeholder="e.g. Contract Attorney"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  Description
-                </label>
-                <textarea
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  maxLength={500}
-                  rows={2}
-                  className="mt-1 w-full rounded border border-neutral-300 px-3 py-2"
-                  placeholder="What this agent does"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  System prompt
-                </label>
-                <textarea
-                  value={formSystemPrompt}
-                  onChange={(e) => setFormSystemPrompt(e.target.value)}
-                  rows={6}
-                  className="mt-1 w-full rounded border border-neutral-300 px-3 py-2"
-                  placeholder="Instructions for the agent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700">
-                  Icon (optional)
-                </label>
-                <input
-                  type="text"
-                  value={formIcon}
-                  onChange={(e) => setFormIcon(e.target.value)}
-                  className="mt-1 w-full rounded border border-neutral-300 px-3 py-2"
-                  placeholder="e.g. 📄 or scales"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={
-                    !formName.trim() ||
-                    !formDescription.trim() ||
-                    !formSystemPrompt.trim() ||
-                    createMut.isPending ||
-                    updateMut.isPending
-                  }
-                  className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="rounded border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-                >
-                  Cancel
-                </button>
-              </div>
+      <Dialog open={showForm} onOpenChange={(open) => !open && resetForm()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Agent" : "New Agent"}</DialogTitle>
+            <DialogDescription>
+              {editingId ? "Update agent details." : "Create a new specialist agent."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="agent-name">Name</Label>
+              <Input
+                id="agent-name"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                maxLength={100}
+                placeholder="e.g. Contract Attorney"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="agent-desc">Description</Label>
+              <Textarea
+                id="agent-desc"
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                maxLength={500}
+                rows={2}
+                placeholder="What this agent does"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="agent-prompt">System prompt</Label>
+              <Textarea
+                id="agent-prompt"
+                value={formSystemPrompt}
+                onChange={(e) => setFormSystemPrompt(e.target.value)}
+                rows={6}
+                placeholder="Instructions for the agent"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="agent-icon">Icon (optional)</Label>
+              <Input
+                id="agent-icon"
+                value={formIcon}
+                onChange={(e) => setFormIcon(e.target.value)}
+                placeholder="e.g. 📄 or scales"
+              />
             </div>
           </div>
-        )}
+          <DialogFooter>
+            <Button
+              onClick={handleSave}
+              disabled={
+                !formName.trim() ||
+                !formDescription.trim() ||
+                !formSystemPrompt.trim() ||
+                createMut.isPending ||
+                updateMut.isPending
+              }
+            >
+              Save
+            </Button>
+            <Button variant="outline" onClick={resetForm}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {isLoading ? (
-          <p className="mt-6 text-neutral-500">Loading...</p>
-        ) : !agents?.length ? (
-          <p className="mt-6 text-neutral-500">
-            No agents yet. Create one or your starter templates will appear when
-            you open this page.
-          </p>
-        ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {agents.map((a) => (
-              <div
-                key={a.id}
-                className={`rounded-lg border border-neutral-200 bg-white p-4 shadow-sm ${a.archivedAt ? "opacity-60" : ""}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {a.icon && (
-                        <span className="text-lg" aria-hidden>
-                          {a.icon}
-                        </span>
-                      )}
-                      <Link
-                        href={`/agents/${a.id}`}
-                        className="font-semibold text-neutral-900 hover:underline"
-                      >
-                        {a.name}
-                      </Link>
-                      {a.isStarter && (
-                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
-                          Starter
-                        </span>
-                      )}
-                      {a.archivedAt && (
-                        <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-xs text-neutral-600">
-                          Archived
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-neutral-600">
-                      {a.description}
-                    </p>
-                  </div>
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="mt-2 h-4 w-2/3" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : !agents?.length ? (
+        <p className="text-center text-muted-foreground">
+          No agents yet. Create one or your starter templates will appear when you open this page.
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {agents.map((a) => (
+            <Card
+              key={a.id}
+              className={cn("transition-colors", a.archivedAt && "opacity-60")}
+            >
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  {a.icon && <span className="text-lg" aria-hidden>{a.icon}</span>}
+                  <CardTitle className="text-base">
+                    <Link href={`/agents/${a.id}`} className="hover:underline">
+                      {a.name}
+                    </Link>
+                  </CardTitle>
+                  {a.isStarter && <Badge variant="secondary">Starter</Badge>}
+                  {a.archivedAt && <Badge variant="outline">Archived</Badge>}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {!a.archivedAt && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(a)}
-                        className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => archiveMut.mutate({ id: a.id })}
-                        className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                      >
-                        Archive
-                      </button>
-                    </>
-                  )}
-                  {a.archivedAt && (
-                    <button
-                      type="button"
-                      onClick={() => unarchiveMut.mutate({ id: a.id })}
-                      className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                    >
-                      Unarchive
-                    </button>
-                  )}
-                  <Link
-                    href={`/agents/${a.id}`}
-                    className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                <CardDescription className="line-clamp-2">{a.description}</CardDescription>
+              </CardHeader>
+              <CardFooter className="flex flex-wrap gap-2">
+                {!a.archivedAt && (
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
+                      Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => archiveMut.mutate({ id: a.id })}>
+                      Archive
+                    </Button>
+                  </>
+                )}
+                {a.archivedAt && (
+                  <Button variant="ghost" size="sm" onClick={() => unarchiveMut.mutate({ id: a.id })}>
+                    Unarchive
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={`/agents/${a.id}`}>View History</Link>
+                </Button>
+                {!a.archivedAt && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(a.id)}
                   >
-                    View History
-                  </Link>
-                  {!a.archivedAt && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(a.id)}
-                      className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                    Delete
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

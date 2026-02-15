@@ -1,16 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  goal: "bg-green-100 text-green-800",
-  preference: "bg-blue-100 text-blue-800",
-  context: "bg-purple-100 text-purple-800",
-  relationship: "bg-orange-100 text-orange-800",
-  work: "bg-slate-100 text-slate-800",
-  personal: "bg-pink-100 text-pink-800",
-};
+function categoryStyle(cat: string): string {
+  const map: Record<string, string> = {
+    goal: "bg-green-500/10 text-green-700 dark:text-green-400",
+    preference: "bg-primary/10 text-primary",
+    context: "bg-purple-500/10 text-purple-700 dark:text-purple-400",
+    relationship: "bg-orange-500/10 text-orange-700 dark:text-orange-400",
+    work: "bg-muted text-muted-foreground",
+    personal: "bg-pink-500/10 text-pink-700 dark:text-pink-400",
+  };
+  return map[cat] ?? "bg-muted text-muted-foreground";
+}
 
 export default function MemoryPage() {
   const utils = trpc.useUtils();
@@ -43,136 +53,134 @@ export default function MemoryPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-8">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="text-2xl font-semibold text-neutral-900">
-          What I Know About You
-        </h1>
-        <p className="mt-1 text-neutral-600">
-          Facts extracted from our conversations. You can edit or remove any.
-        </p>
+    <div className="max-w-3xl space-y-6 p-4 md:p-6">
+      <PageHeader
+        title="What I Know About You"
+        description="Facts extracted from our conversations. You can edit or remove any."
+      />
 
-        {isLoading ? (
-          <p className="mt-6 text-neutral-500">Loading...</p>
-        ) : Object.keys(byCategory).length === 0 ? (
-          <p className="mt-6 text-neutral-500">
-            No facts recorded yet. Start a coaching conversation and I'll learn
-            about you.
-          </p>
-        ) : (
-          <div className="mt-6 space-y-6">
-            {categories.map((cat) => {
-              const list = byCategory[cat];
-              if (!list?.length) return null;
-              return (
-                  <section key={cat}>
-                    <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-neutral-500">
-                      {cat} ({list.length})
-                    </h2>
-                    <div className="space-y-2">
-                      {list.map((f) => (
-                        <div
-                          key={f.id}
-                          className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
-                        >
-                          {editingId === f.id ? (
-                            <div className="space-y-2">
-                              <textarea
-                                value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
-                                className="w-full rounded border border-neutral-300 p-2 text-sm"
-                                rows={2}
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    updateMut.mutate({
-                                      id: f.id,
-                                      fact: editText,
-                                    });
-                                    setEditingId(null);
-                                  }}
-                                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+      {isLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : Object.keys(byCategory).length === 0 ? (
+        <p className="text-muted-foreground">
+          No facts recorded yet. Start a coaching conversation and I&apos;ll learn about you.
+        </p>
+      ) : (
+        <div className="space-y-6">
+          {categories.map((cat) => {
+            const list = byCategory[cat];
+            if (!list?.length) return null;
+            return (
+              <section key={cat}>
+                <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                  {cat} ({list.length})
+                </h2>
+                <div className="space-y-2">
+                  {list.map((f) => (
+                    <Card key={f.id}>
+                      <CardContent className="pt-4">
+                        {editingId === f.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              rows={2}
+                              className="min-h-[60px]"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  updateMut.mutate({
+                                    id: f.id,
+                                    fact: editText,
+                                  });
+                                  setEditingId(null);
+                                }}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingId(null);
+                                  setEditText("");
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-foreground">{f.fact}</p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className={categoryStyle(f.category)}
                                 >
-                                  Save
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingId(null);
-                                    setEditText("");
-                                  }}
-                                  className="rounded border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50"
-                                >
-                                  Cancel
-                                </button>
+                                  {f.category}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {f.confidence != null
+                                    ? `${Math.round(f.confidence * 100)}%`
+                                    : ""}
+                                </span>
+                                {f.source && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {f.source}
+                                  </span>
+                                )}
                               </div>
                             </div>
-                          ) : (
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-neutral-900">{f.fact}</p>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  <span
-                                    className={`rounded px-2 py-0.5 text-xs ${
-                                      CATEGORY_COLORS[f.category] ?? "bg-neutral-100"
-                                    }`}
-                                  >
-                                    {f.category}
-                                  </span>
-                                  <span className="text-xs text-neutral-500">
-                                    {f.confidence != null
-                                      ? `${Math.round(f.confidence * 100)}%`
-                                      : ""}
-                                  </span>
-                                  {f.source && (
-                                    <span className="text-xs text-neutral-500">
-                                      {f.source}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingId(f.id);
-                                    setEditText(f.fact);
-                                  }}
-                                  className="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-                                  aria-label="Edit"
-                                >
-                                  ✎
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        "Remove this fact from your profile?"
-                                      )
-                                    ) {
-                                      deleteMut.mutate({ id: f.id });
-                                    }
-                                  }}
-                                  className="rounded p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600"
-                                  aria-label="Delete"
-                                >
-                                  🗑
-                                </button>
-                              </div>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  setEditingId(f.id);
+                                  setEditText(f.fact);
+                                }}
+                                aria-label="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      "Remove this fact from your profile?"
+                                    )
+                                  ) {
+                                    deleteMut.mutate({ id: f.id });
+                                  }
+                                }}
+                                aria-label="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

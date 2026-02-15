@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { Upload, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 
 const SERVER_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
@@ -73,100 +79,102 @@ export default function DocumentsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-8">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="text-2xl font-semibold text-neutral-900">Documents</h1>
-        <p className="mt-1 text-neutral-600">
-          Upload documents to inform your coaching sessions. Max 10MB per file.
-        </p>
+    <div className="max-w-3xl space-y-6 p-4 md:p-6">
+      <PageHeader
+        title="Documents"
+        description="Upload documents to inform your coaching sessions. Max 10MB per file."
+      />
 
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-          className={`mt-6 rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-            dragOver ? "border-blue-400 bg-blue-50" : "border-neutral-300"
-          } ${uploading ? "pointer-events-none opacity-60" : ""}`}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        className={`rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+          dragOver ? "border-primary bg-primary/5" : "border-border"
+        } ${uploading ? "pointer-events-none opacity-60" : ""}`}
+      >
+        <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
+        <input
+          type="file"
+          accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+          onChange={onFileInput}
+          className="hidden"
+          id="doc-upload"
+        />
+        <label
+          htmlFor="doc-upload"
+          className="mt-2 block cursor-pointer text-muted-foreground hover:text-foreground"
         >
-          <input
-            type="file"
-            accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-            onChange={onFileInput}
-            className="hidden"
-            id="doc-upload"
-          />
-          <label
-            htmlFor="doc-upload"
-            className="cursor-pointer text-neutral-600 hover:text-neutral-900"
-          >
-            {uploading
-              ? "Uploading..."
-              : "Drop a file here or click to select (PDF, DOCX, TXT)"}
-          </label>
-          {uploadError && (
-            <p className="mt-2 text-sm text-red-600">{uploadError}</p>
-          )}
-        </div>
-
-        <h2 className="mt-8 text-lg font-medium text-neutral-900">
-          Your documents
-        </h2>
-        {isLoading ? (
-          <p className="mt-2 text-neutral-500">Loading...</p>
-        ) : !documents?.length ? (
-          <p className="mt-2 text-neutral-500">
-            No documents uploaded yet. Upload PDFs, Word documents, or text files
-            to give your coach more context.
-          </p>
-        ) : (
-          <ul className="mt-2 space-y-2">
-            {documents.map((doc) => (
-              <li
-                key={doc.id}
-                className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-4 py-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-neutral-900">
-                    {doc.filename}
-                  </span>
-                  <span className="ml-2 text-sm text-neutral-500">
-                    {formatSize(doc.size)} • {doc.mimeType}
-                  </span>
-                  <span
-                    className={`ml-2 rounded px-2 py-0.5 text-xs ${
-                      doc.status === "ready"
-                        ? "bg-green-100 text-green-800"
-                        : doc.status === "error"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {doc.status}
-                  </span>
-                </div>
-                <span className="text-xs text-neutral-400">
-                  {new Date(doc.createdAt).toLocaleDateString()}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm("Delete this document?")) {
-                      deleteMut.mutate({ id: doc.id });
-                    }
-                  }}
-                  className="ml-2 rounded p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600"
-                  aria-label="Delete"
-                >
-                  🗑
-                </button>
-              </li>
-            ))}
-          </ul>
+          {uploading
+            ? "Uploading..."
+            : "Drop a file here or click to select (PDF, DOCX, TXT)"}
+        </label>
+        {uploadError && (
+          <p className="mt-2 text-sm text-destructive">{uploadError}</p>
         )}
       </div>
+
+      <h2 className="text-lg font-medium">Your documents</h2>
+      {isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </div>
+      ) : !documents?.length ? (
+        <p className="text-muted-foreground">
+          No documents uploaded yet. Upload PDFs, Word documents, or text files to give your coach more context.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {documents.map((doc) => (
+            <li key={doc.id}>
+              <Card>
+                <CardContent className="flex items-center justify-between gap-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-medium text-foreground">
+                      {doc.filename}
+                    </span>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      {formatSize(doc.size)} • {doc.mimeType}
+                    </span>
+                    <Badge
+                      variant={
+                        doc.status === "ready"
+                          ? "default"
+                          : doc.status === "error"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="ml-2"
+                    >
+                      {doc.status}
+                    </Badge>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(doc.createdAt).toLocaleDateString()}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      if (window.confirm("Delete this document?")) {
+                        deleteMut.mutate({ id: doc.id });
+                      }
+                    }}
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

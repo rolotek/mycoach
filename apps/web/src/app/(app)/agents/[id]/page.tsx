@@ -3,7 +3,19 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AgentDetailPage() {
   const id = useParams().id as string;
@@ -28,99 +40,89 @@ export default function AgentDetailPage() {
 
   if (!agent) {
     return (
-      <div className="min-h-screen bg-neutral-50 p-8">
-        <div className="mx-auto max-w-4xl">
-          <Link
-            href="/agents"
-            className="text-sm text-neutral-600 hover:underline"
-          >
+      <div className="max-w-4xl space-y-6 p-4 md:p-6">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/agents">
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Agents
           </Link>
-          <p className="mt-4 text-neutral-500">Agent not found or loading.</p>
-        </div>
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground">Agent not found or loading.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-8">
-      <div className="mx-auto max-w-4xl">
-        <Link
-          href="/agents"
-          className="text-sm text-neutral-600 hover:underline"
-        >
+    <div className="max-w-4xl space-y-6 p-4 md:p-6">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/agents">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Agents
         </Link>
+      </Button>
 
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <Card>
+        <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             {agent.icon && (
               <span className="text-2xl" aria-hidden>
                 {agent.icon}
               </span>
             )}
-            <h1 className="text-xl font-semibold text-neutral-900">
-              {agent.name}
-            </h1>
-            {agent.isStarter && (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
-                Starter
-              </span>
-            )}
-            {agent.archivedAt && (
-              <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-xs text-neutral-600">
-                Archived
-              </span>
-            )}
+            <CardTitle className="text-xl">{agent.name}</CardTitle>
+            {agent.isStarter && <Badge variant="secondary">Starter</Badge>}
+            {agent.archivedAt && <Badge variant="outline">Archived</Badge>}
           </div>
-          <p className="mt-2 text-sm text-neutral-600">{agent.description}</p>
-
-          <div className="mt-4">
-            <h2 className="text-sm font-medium text-neutral-700">
-              Current system prompt
-            </h2>
-            <pre className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded bg-neutral-50 p-4 font-mono text-sm">
-              {agent.systemPrompt}
-            </pre>
-          </div>
-
-          <div className="mt-6">
-            <h2 className="text-sm font-medium text-neutral-700">
-              Feedback summary
-            </h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Total: {feedbackList?.length ?? 0} · Positive: {positiveCount} ·
-              Negative: {negativeCount}
-            </p>
-          </div>
-
-          <div className="mt-6">
-            <h2 className="text-sm font-medium text-neutral-700">
-              Version history
-            </h2>
-            {versionsLoading ? (
-              <p className="mt-2 text-sm text-neutral-500">Loading...</p>
-            ) : !versions?.length ? (
-              <p className="mt-2 text-sm text-neutral-500">
-                No version history yet
+          <CardDescription>{agent.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="prompt">
+            <TabsList>
+              <TabsTrigger value="prompt">Prompt</TabsTrigger>
+              <TabsTrigger value="versions">Versions</TabsTrigger>
+              <TabsTrigger value="feedback">Feedback</TabsTrigger>
+            </TabsList>
+            <TabsContent value="prompt">
+              <pre className="mt-4 max-h-64 overflow-auto rounded-lg bg-muted p-4 font-mono text-sm">
+                {agent.systemPrompt}
+              </pre>
+            </TabsContent>
+            <TabsContent value="versions">
+              {versionsLoading ? (
+                <div className="mt-4 space-y-3">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              ) : !versions?.length ? (
+                <p className="mt-4 text-sm text-muted-foreground">No version history yet</p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {versions.map((v) => (
+                    <VersionCard
+                      key={v.id}
+                      version={v}
+                      onRevert={() =>
+                        revertMut.mutate({ agentId: id, versionId: v.id })
+                      }
+                      isReverting={revertMut.isPending}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="feedback">
+              <p className="mt-4 text-sm text-muted-foreground">
+                Total: {feedbackList?.length ?? 0} · Positive: {positiveCount} ·
+                Negative: {negativeCount}
               </p>
-            ) : (
-              <div className="mt-2 space-y-3">
-                {versions.map((v) => (
-                  <VersionCard
-                    key={v.id}
-                    version={v}
-                    onRevert={() =>
-                      revertMut.mutate({ agentId: id, versionId: v.id })
-                    }
-                    isReverting={revertMut.isPending}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -142,53 +144,50 @@ function VersionCard({
   isReverting: boolean;
 }) {
   const [showPrompt, setShowPrompt] = useState(false);
-  const badgeClass =
-    version.changeSource === "evolution"
-      ? "bg-green-100 text-green-800"
-      : version.changeSource === "manual"
-        ? "bg-blue-100 text-blue-800"
-        : "bg-neutral-100 text-neutral-700";
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-neutral-50/50 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium text-neutral-900">
-            Version {version.version}
-          </span>
-          <span
-            className={`rounded px-1.5 py-0.5 text-xs ${badgeClass}`}
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">Version {version.version}</span>
+            <Badge
+              variant={
+                version.changeSource === "evolution" ? "default" : "secondary"
+              }
+            >
+              {version.changeSource}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {new Date(version.createdAt).toLocaleString()}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRevert}
+            disabled={isReverting}
           >
-            {version.changeSource}
-          </span>
-          <span className="text-sm text-neutral-500">
-            {new Date(version.createdAt).toLocaleString()}
-          </span>
+            Revert to this version
+          </Button>
         </div>
-        <button
-          type="button"
-          onClick={onRevert}
-          disabled={isReverting}
-          className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100 disabled:opacity-50"
+        {version.changeSummary && (
+          <p className="text-sm text-muted-foreground">{version.changeSummary}</p>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          onClick={() => setShowPrompt((s) => !s)}
         >
-          Revert to this version
-        </button>
-      </div>
-      {version.changeSummary && (
-        <p className="mt-2 text-sm text-neutral-600">{version.changeSummary}</p>
-      )}
-      <button
-        type="button"
-        onClick={() => setShowPrompt((s) => !s)}
-        className="mt-2 text-xs text-neutral-500 hover:underline"
-      >
-        {showPrompt ? "Hide prompt" : "Show prompt"}
-      </button>
-      {showPrompt && (
-        <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap rounded bg-white p-2 font-mono text-xs">
-          {version.systemPrompt}
-        </pre>
-      )}
-    </div>
+          {showPrompt ? "Hide prompt" : "Show prompt"}
+        </Button>
+        {showPrompt && (
+          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-xs">
+            {version.systemPrompt}
+          </pre>
+        )}
+      </CardHeader>
+    </Card>
   );
 }
