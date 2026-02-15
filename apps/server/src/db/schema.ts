@@ -147,6 +147,9 @@ export const conversations = pgTable(
     projectId: uuid("project_id").references((): AnyPgColumn => projects.id, {
       onDelete: "set null",
     }),
+    milestoneId: uuid("milestone_id").references((): AnyPgColumn => projectMilestones.id, {
+      onDelete: "set null",
+    }),
     messages: jsonb("messages").default([]),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -155,6 +158,7 @@ export const conversations = pgTable(
     index("conversations_userId_idx").on(table.userId),
     index("conversations_parentId_idx").on(table.parentId),
     index("conversations_projectId_idx").on(table.projectId),
+    index("conversations_milestoneId_idx").on(table.milestoneId),
   ]
 );
 
@@ -233,6 +237,9 @@ export const projectDocuments = pgTable(
     documentId: uuid("document_id")
       .notNull()
       .references(() => documents.id, { onDelete: "cascade" }),
+    milestoneId: uuid("milestone_id").references((): AnyPgColumn => projectMilestones.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -254,6 +261,9 @@ export const projectLinks = pgTable(
     url: text("url").notNull(),
     label: text("label").notNull(),
     linkType: varchar("link_type", { length: 50 }).default("generic").notNull(),
+    milestoneId: uuid("milestone_id").references((): AnyPgColumn => projectMilestones.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [index("project_links_projectId_idx").on(table.projectId)]

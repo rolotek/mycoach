@@ -3,7 +3,7 @@ import { streamText, createAgentUIStream, createUIMessageStreamResponse } from "
 import { convertToModelMessages, tool } from "ai";
 import type { UIMessage, UIMessageChunk } from "ai";
 import type { ExecutedDispatchResult } from "../agents/resolve-approved-dispatch";
-import { eq, and, desc, isNull, gte, sql } from "drizzle-orm";
+import { eq, and, desc, isNull, gte, sql, or } from "drizzle-orm";
 import { db } from "../db";
 import {
   conversations,
@@ -14,6 +14,7 @@ import {
   projects,
   projectDocuments,
   projectLinks,
+  projectMilestones,
   documents,
 } from "../db/schema";
 import { resolveUserModel, ApiKeyRequiredError } from "../llm/providers";
@@ -220,10 +221,11 @@ async function trackUsage(params: {
   });
 }
 
-/** Load project by id and userId; return context string for system prompt, or empty if not found. */
+/** Load project by id and userId; when milestoneId is provided, narrow to section docs/links + project-level. */
 async function loadProjectContext(
   projectId: string,
-  userId: string
+  userId: string,
+  milestoneId?: string | null
 ): Promise<string> {
   const [project] = await db
     .select()
@@ -231,20 +233,40 @@ async function loadProjectContext(
     .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
   if (!project) return "";
 
+  const docFilter =
+    milestoneId == null
+      ? and(
+          eq(projectDocuments.projectId, projectId),
+          eq(documents.userId, userId)
+        )
+      : and(
+          eq(projectDocuments.projectId, projectId),
+          eq(documents.userId, userId),
+          or(
+            eq(projectDocuments.milestoneId, milestoneId),
+            isNull(projectDocuments.milestoneId)
+          )
+        );
   const projectDocs = await db
     .select({ filename: documents.filename })
     .from(projectDocuments)
     .innerJoin(documents, eq(projectDocuments.documentId, documents.id))
-    .where(
-      and(
-        eq(projectDocuments.projectId, projectId),
-        eq(documents.userId, userId)
-      )
-    );
+    .where(docFilter);
+
+  const linkFilter =
+    milestoneId == null
+      ? eq(projectLinks.projectId, projectId)
+      : and(
+          eq(projectLinks.projectId, projectId),
+          or(
+            eq(projectLinks.milestoneId, milestoneId),
+            isNull(projectLinks.milestoneId)
+          )
+        );
   const links = await db
     .select({ url: projectLinks.url, label: projectLinks.label })
     .from(projectLinks)
-    .where(eq(projectLinks.projectId, projectId));
+    .where(linkFilter);
 
   const docList =
     projectDocs.length > 0
@@ -255,8 +277,24 @@ async function loadProjectContext(
       ? links.map((l) => `${l.label}: ${l.url}`).join("\n")
       : "None";
 
+  let sectionLine = "";
+  if (milestoneId) {
+    const [milestone] = await db
+      .select({ title: projectMilestones.title })
+      .from(projectMilestones)
+      .where(
+        and(
+          eq(projectMilestones.id, milestoneId),
+          eq(projectMilestones.projectId, projectId)
+        )
+      );
+    if (milestone) {
+      sectionLine = `\nSection: ${milestone.title}`;
+    }
+  }
+
   return `Project: ${project.name}
-Description: ${project.description ?? "(none)"}
+Description: ${project.description ?? "(none)"}${sectionLine}
 Attached documents: ${docList}
 Links:\n${linkList}`;
 }
@@ -281,6 +319,7 @@ chatApp.post("/api/chat", async (c) => {
     chatId?: string;
     mode?: ConversationMode;
     projectId?: string;
+    milestoneId?: string | null;
   }>();
 
   const { messages: rawMessages, mode: modeOverride = "auto" } = body;
@@ -290,10 +329,12 @@ chatApp.post("/api/chat", async (c) => {
   });
   let chatId = body.chatId;
   const requestProjectId = body.projectId ?? null;
+  const requestMilestoneId = body.milestoneId ?? null;
 
   // Validate projectId belongs to user; load context for prompt injection
   let projectContext = "";
   let validProjectId: string | null = null;
+  let validMilestoneId: string | null = null;
   if (requestProjectId) {
     const [project] = await db
       .select()
@@ -306,7 +347,23 @@ chatApp.post("/api/chat", async (c) => {
       );
     if (project) {
       validProjectId = project.id;
-      projectContext = await loadProjectContext(project.id, user.id);
+      if (requestMilestoneId) {
+        const [milestone] = await db
+          .select()
+          .from(projectMilestones)
+          .where(
+            and(
+              eq(projectMilestones.id, requestMilestoneId),
+              eq(projectMilestones.projectId, project.id)
+            )
+          );
+        if (milestone) validMilestoneId = milestone.id;
+      }
+      projectContext = await loadProjectContext(
+        project.id,
+        user.id,
+        validMilestoneId
+      );
     }
   }
 
@@ -317,6 +374,7 @@ chatApp.post("/api/chat", async (c) => {
         userId: user.id,
         mode: modeOverride,
         projectId: validProjectId,
+        milestoneId: validMilestoneId,
       })
       .returning();
     chatId = conv.id;
@@ -371,7 +429,10 @@ chatApp.post("/api/chat", async (c) => {
       : "No facts recorded yet.";
 
   const [convRow] = await db
-    .select({ projectId: conversations.projectId })
+    .select({
+      projectId: conversations.projectId,
+      milestoneId: conversations.milestoneId,
+    })
     .from(conversations)
     .where(
       and(

@@ -952,6 +952,7 @@ const projectRouter = t.router({
         .select({
           id: documents.id,
           filename: documents.filename,
+          milestoneId: projectDocuments.milestoneId,
         })
         .from(projectDocuments)
         .innerJoin(documents, eq(projectDocuments.documentId, documents.id))
@@ -1067,6 +1068,7 @@ const projectRouter = t.router({
       z.object({
         projectId: z.string().uuid(),
         documentId: z.string().uuid(),
+        milestoneId: z.string().uuid().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1080,6 +1082,18 @@ const projectRouter = t.router({
           )
         );
       if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      if (input.milestoneId != null) {
+        const [milestone] = await ctx.db
+          .select()
+          .from(projectMilestones)
+          .where(
+            and(
+              eq(projectMilestones.id, input.milestoneId),
+              eq(projectMilestones.projectId, input.projectId)
+            )
+          );
+        if (!milestone) throw new TRPCError({ code: "NOT_FOUND", message: "Milestone not found or not in this project" });
+      }
       const [doc] = await ctx.db
         .select()
         .from(documents)
@@ -1093,6 +1107,7 @@ const projectRouter = t.router({
       await ctx.db.insert(projectDocuments).values({
         projectId: input.projectId,
         documentId: input.documentId,
+        milestoneId: input.milestoneId ?? null,
       }).onConflictDoNothing({
         target: [projectDocuments.projectId, projectDocuments.documentId],
       });
@@ -1122,6 +1137,7 @@ const projectRouter = t.router({
         projectId: z.string().uuid(),
         url: z.string().url(),
         label: z.string().min(1).max(200),
+        milestoneId: z.string().uuid().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1135,6 +1151,18 @@ const projectRouter = t.router({
           )
         );
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      if (input.milestoneId != null) {
+        const [milestone] = await ctx.db
+          .select()
+          .from(projectMilestones)
+          .where(
+            and(
+              eq(projectMilestones.id, input.milestoneId),
+              eq(projectMilestones.projectId, input.projectId)
+            )
+          );
+        if (!milestone) throw new TRPCError({ code: "NOT_FOUND", message: "Milestone not found or not in this project" });
+      }
       const linkType = detectLinkType(input.url);
       const [row] = await ctx.db
         .insert(projectLinks)
@@ -1143,6 +1171,7 @@ const projectRouter = t.router({
           url: input.url,
           label: input.label,
           linkType,
+          milestoneId: input.milestoneId ?? null,
         })
         .returning();
       if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
