@@ -89,16 +89,20 @@ Plans:
 ### Phase 5: UI Polish & Styling
 **Goal**: Every page has a consistent, polished design with responsive layouts and a cohesive design system
 **Depends on**: Phase 4
-**Requirements**: TBD (styling is cross-cutting)
+**Requirements**: Cross-cutting (all pages and components)
 **Success Criteria** (what must be TRUE):
   1. All pages use a consistent design system (colors, typography, spacing, components)
   2. Layout is responsive and usable on mobile, tablet, and desktop
   3. Interactive elements have proper hover, focus, and loading states
   4. The app looks professionally designed and polished
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md — shadcn/ui init, design tokens, dark mode, Inter font, app shell with sidebar navigation, shared components (ChatMarkdown, PageHeader)
+- [ ] 05-02-PLAN.md — Restyle auth pages (login/signup), dashboard, and settings with shadcn/ui components
+- [ ] 05-03-PLAN.md — Restyle chat interface: conversation sidebar, message list with react-markdown, input, agent cards
+- [ ] 05-04-PLAN.md — Restyle agents (list + detail), memory, and documents pages with shadcn/ui components
+- [ ] 05-05-PLAN.md — Final consistency audit, raw class cleanup, and visual verification checkpoint
 
 ## Progress
 
@@ -111,4 +115,4 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
 | 3. Agent System | 0/3 | Planned | - |
 | 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
-| 5. UI Polish & Styling | 0/TBD | Not started | - |
+| 5. UI Polish & Styling | 0/5 | Planned | - |
