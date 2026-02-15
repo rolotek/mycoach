@@ -56,6 +56,7 @@ None yet.
 
 - Phase 5 added: UI Polish & Styling - Comprehensive styling pass with consistent design system, responsive layouts, and polished UX
 - Phase 6 added: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
+- Phase 7 added: Friendlier error messages and localization — map server and LLM errors (e.g. model not found, APICallError) to user-facing localized strings via key-to-string mapping
 
 ### Blockers/Concerns
 

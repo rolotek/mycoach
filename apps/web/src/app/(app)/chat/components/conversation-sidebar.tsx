@@ -42,7 +42,7 @@ export function ConversationSidebar({
   const utils = trpc.useUtils();
   const resetMut = trpc.conversation.reset.useMutation({
     onSuccess: () => {
-      utils.conversation.get.invalidate();
+      utils.conversation.get.invalidate({ id: coachingId! });
       utils.conversation.listTaskThreads.invalidate();
       if (activeChatId === coachingId) router.replace(`/chat/${coachingId}`);
     },

@@ -124,6 +124,7 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
 | 5. UI Polish & Styling | 5/9 | In progress | - |
 | 6. API Key & Usage | 5/5 | Complete | 2026-02-15 |
+| 7. Friendlier errors & i18n | 0/? | Not planned | - |
 
 ### Phase 6: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
 
@@ -137,3 +138,12 @@ Plans:
 - [x] 06-03-PLAN.md — Chat route + agent executor/chief-of-staff/agent-tools: per-user model, token tracking, budget check
 - [x] 06-04-PLAN.md — Settings UI (API keys, budget, usage dashboard), usage.summary tRPC
 - [x] 06-05-PLAN.md — Agent detail page model selection + end-to-end human verification
+
+### Phase 7: Friendlier error messages and localization — map server and LLM errors (e.g. model not found, APICallError) to user-facing localized strings via key-to-string mapping
+
+**Goal:** [To be planned]
+**Depends on:** Phase 6
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd/plan-phase 7 to break down)

@@ -39,11 +39,16 @@ export default function ChatIdPage() {
   } = useCoachingChat(chatId, mode);
 
   useEffect(() => {
-    if (conv?.messages && Array.isArray(conv.messages) && messages.length === 0) {
+    if (!conv?.messages || !Array.isArray(conv.messages)) return;
+    if (conv.messages.length === 0) {
+      setMessages([]);
+      return;
+    }
+    if (messages.length === 0) {
       const normalized = conv.messages as UIMessage[];
       setMessages(normalized.map((m) => ({ ...m, id: m.id ?? crypto.randomUUID() })));
     }
-  }, [conv?.messages, setMessages]);
+  }, [conv?.messages, messages.length, setMessages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
