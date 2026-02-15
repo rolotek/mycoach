@@ -97,6 +97,7 @@ export const userRelations = relations(user, ({ many }) => ({
   agents: many(agents),
   apiKeys: many(userApiKeys),
   tokenUsage: many(tokenUsage),
+  projects: many(projects),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -143,6 +144,9 @@ export const conversations = pgTable(
     parentId: uuid("parent_id").references((): AnyPgColumn => conversations.id, {
       onDelete: "cascade",
     }),
+    projectId: uuid("project_id").references((): AnyPgColumn => projects.id, {
+      onDelete: "set null",
+    }),
     messages: jsonb("messages").default([]),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -150,6 +154,7 @@ export const conversations = pgTable(
   (table) => [
     index("conversations_userId_idx").on(table.userId),
     index("conversations_parentId_idx").on(table.parentId),
+    index("conversations_projectId_idx").on(table.projectId),
   ]
 );
 
@@ -194,6 +199,105 @@ export const documents = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [index("documents_userId_idx").on(table.userId)]
+);
+
+// Phase 8: Projects
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    status: varchar("status", { length: 50 }).default("active").notNull(),
+    dueDate: timestamp("due_date"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("projects_userId_idx").on(table.userId)]
+);
+
+export const projectDocuments = pgTable(
+  "project_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("project_documents_projectId_idx").on(table.projectId),
+    unique("project_documents_projectId_documentId_unique").on(
+      table.projectId,
+      table.documentId
+    ),
+  ]
+);
+
+export const projectLinks = pgTable(
+  "project_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    label: text("label").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("project_links_projectId_idx").on(table.projectId)]
+);
+
+export const projectMilestones = pgTable(
+  "project_milestones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    dueDate: timestamp("due_date"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    status: varchar("status", { length: 50 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("project_milestones_projectId_idx").on(table.projectId)]
+);
+
+export const projectTasks = pgTable(
+  "project_tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: varchar("status", { length: 50 }).default("todo").notNull(),
+    dueDate: timestamp("due_date"),
+    conversationId: uuid("conversation_id").references(
+      (): AnyPgColumn => conversations.id,
+      { onDelete: "set null" }
+    ),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("project_tasks_projectId_idx").on(table.projectId),
+    index("project_tasks_conversationId_idx").on(table.conversationId),
+  ]
 );
 
 export const userFacts = pgTable(
@@ -260,6 +364,9 @@ export const agentExecutions = pgTable(
       () => conversations.id,
       { onDelete: "set null" }
     ),
+    projectId: uuid("project_id").references((): AnyPgColumn => projects.id, {
+      onDelete: "set null",
+    }),
     task: text("task").notNull(),
     result: text("result"),
     status: text("status").default("pending").notNull(),
@@ -269,6 +376,7 @@ export const agentExecutions = pgTable(
   (table) => [
     index("agent_executions_userId_idx").on(table.userId),
     index("agent_executions_agentId_idx").on(table.agentId),
+    index("agent_executions_projectId_idx").on(table.projectId),
   ]
 );
 
@@ -374,6 +482,10 @@ export const conversationRelations = relations(conversations, ({ one, many }) =>
     relationName: "conversationParent",
   }),
   children: many(conversations, { relationName: "conversationParent" }),
+  project: one(projects, {
+    fields: [conversations.projectId],
+    references: [projects.id],
+  }),
 }));
 
 export const memoryRelations = relations(memories, ({ one }) => ({
@@ -387,11 +499,12 @@ export const memoryRelations = relations(memories, ({ one }) => ({
   }),
 }));
 
-export const documentRelations = relations(documents, ({ one }) => ({
+export const documentRelations = relations(documents, ({ one, many }) => ({
   user: one(user, {
     fields: [documents.userId],
     references: [user.id],
   }),
+  projectDocuments: many(projectDocuments),
 }));
 
 export const userFactRelations = relations(userFacts, ({ one }) => ({
@@ -461,6 +574,60 @@ export const agentExecutionRelations = relations(agentExecutions, ({ one }) => (
   }),
   conversation: one(conversations, {
     fields: [agentExecutions.conversationId],
+    references: [conversations.id],
+  }),
+  project: one(projects, {
+    fields: [agentExecutions.projectId],
+    references: [projects.id],
+  }),
+}));
+
+// Phase 8: Project relations
+export const projectRelations = relations(projects, ({ one, many }) => ({
+  user: one(user, {
+    fields: [projects.userId],
+    references: [user.id],
+  }),
+  projectDocuments: many(projectDocuments),
+  projectLinks: many(projectLinks),
+  projectMilestones: many(projectMilestones),
+  projectTasks: many(projectTasks),
+  conversations: many(conversations),
+  agentExecutions: many(agentExecutions),
+}));
+
+export const projectDocumentRelations = relations(projectDocuments, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectDocuments.projectId],
+    references: [projects.id],
+  }),
+  document: one(documents, {
+    fields: [projectDocuments.documentId],
+    references: [documents.id],
+  }),
+}));
+
+export const projectLinkRelations = relations(projectLinks, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectLinks.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const projectMilestoneRelations = relations(projectMilestones, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMilestones.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const projectTaskRelations = relations(projectTasks, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectTasks.projectId],
+    references: [projects.id],
+  }),
+  conversation: one(conversations, {
+    fields: [projectTasks.conversationId],
     references: [conversations.id],
   }),
 }));
