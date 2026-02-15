@@ -124,7 +124,7 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
 | 5. UI Polish & Styling | 5/9 | In progress | - |
 | 6. API Key & Usage | 5/5 | Complete | 2026-02-15 |
-| 7. Friendlier errors & i18n | 0/? | Not planned | - |
+| 7. Friendlier errors & i18n | 0/4 | Planned | - |
 | 8. Projects | 4/4 | Complete | 2026-02-15 |
 
 ### Phase 6: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
@@ -142,12 +142,15 @@ Plans:
 
 ### Phase 7: Friendlier error messages and localization — map server and LLM errors (e.g. model not found, APICallError) to user-facing localized strings via key-to-string mapping
 
-**Goal:** [To be planned]
+**Goal:** All UI strings use translation keys; locale is detected from system with user override (like theme); server/LLM errors map to stable keys and show localized messages; app supports en (default), fr-FR (France French), it, ja, zh-CN, en-GB.
 **Depends on:** Phase 6
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd/plan-phase 7 to break down)
+- [ ] 07-01-PLAN.md — i18n foundation (next-intl, [locale], middleware, system + user override, LocaleToggle)
+- [ ] 07-02-PLAN.md — Extract all UI strings to keys; full messages/en.json
+- [ ] 07-03-PLAN.md — Error key mapping (server returns errorKey; client shows t(errorKey))
+- [ ] 07-04-PLAN.md — Translation files for fr-FR, it, ja, zh-CN, en-GB
 
 ### Phase 8: Projects — user-defined projects (e.g. improve NDA templates, write sci-fi novel, onboarding plan) with definition, documents/artifacts (e.g. SharePoint links) for context, milestones, and tasks
 

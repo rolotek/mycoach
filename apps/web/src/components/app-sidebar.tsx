@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -26,6 +25,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LocaleToggle } from "@/components/locale-toggle";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -80,6 +80,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="pb-14">
         <div className="flex items-center gap-1">
+          <LocaleToggle />
           <ThemeToggle />
           <Button
             variant="ghost"

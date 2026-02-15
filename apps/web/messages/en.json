@@ -1,0 +1,9 @@
+{
+  "common": {
+    "loading": "Loading..."
+  },
+  "auth": {},
+  "chat": {},
+  "settings": {},
+  "sidebar": {}
+}

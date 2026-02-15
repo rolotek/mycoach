@@ -1,7 +1,7 @@
 "use client";
 
 import { authClient } from "../lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
