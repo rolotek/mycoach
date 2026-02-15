@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import type { UIMessage } from "ai";
 import { trpc } from "@/lib/trpc";
 import { useCoachingChat } from "@/hooks/use-coaching-chat";
-import { MessageList } from "../components/message-list";
+import { MessageList, type MessageListMessage } from "../components/message-list";
 import { ChatInput } from "../components/chat-input";
 import { ModeToggle } from "../components/mode-toggle";
 import { ConversationSidebar } from "../components/conversation-sidebar";
@@ -27,6 +27,7 @@ export default function ChatIdPage() {
     status,
     sendMessage,
     setMessages,
+    addToolApprovalResponse,
   } = useCoachingChat(chatId, mode);
 
   useEffect(() => {
@@ -64,7 +65,11 @@ export default function ChatIdPage() {
           <h1 className="text-lg font-medium text-neutral-900">Coach</h1>
           <ModeToggle mode={mode} onChange={setMode} />
         </div>
-        <MessageList messages={messages} status={status} />
+        <MessageList
+          messages={messages as MessageListMessage[]}
+          status={status}
+          addToolApprovalResponse={addToolApprovalResponse}
+        />
         <ChatInput
           input={input}
           handleInputChange={(e) => setInput(e.target.value)}
