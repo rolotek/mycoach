@@ -76,7 +76,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="pb-14">
         <div className="flex items-center gap-1">
           <ThemeToggle />
           <Button

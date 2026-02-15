@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/page-header";
+import { AgentIcon } from "@/components/agent-icon";
 
 export default function AgentsPage() {
   const utils = trpc.useUtils();
@@ -217,7 +218,7 @@ export default function AgentsPage() {
             >
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
-                  {a.icon && <span className="text-lg" aria-hidden>{a.icon}</span>}
+                  <AgentIcon icon={a.icon} />
                   <CardTitle className="text-base">
                     <Link href={`/agents/${a.id}`} className="hover:underline">
                       {a.name}

@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AgentIcon } from "@/components/agent-icon";
 
 export default function AgentDetailPage() {
   const id = useParams().id as string;
@@ -68,11 +69,7 @@ export default function AgentDetailPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
-            {agent.icon && (
-              <span className="text-2xl" aria-hidden>
-                {agent.icon}
-              </span>
-            )}
+            <AgentIcon icon={agent.icon} size="h-6 w-6" />
             <CardTitle className="text-xl">{agent.name}</CardTitle>
             {agent.isStarter && <Badge variant="secondary">Starter</Badge>}
             {agent.archivedAt && <Badge variant="outline">Archived</Badge>}
