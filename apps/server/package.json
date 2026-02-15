@@ -9,7 +9,9 @@
     "dev": "node scripts/dev-with-logs.js",
     "build": "tsc",
     "db:push": "node scripts/db-push.js",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:pgvector": "tsx scripts/enable-pgvector.ts",
+    "db:setup": "tsx scripts/enable-pgvector.ts && node scripts/db-push.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.44",
