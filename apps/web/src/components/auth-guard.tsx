@@ -3,6 +3,7 @@
 import { authClient } from "../lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
@@ -14,7 +15,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [session, isPending, router]);
 
-  if (isPending) return <div>Loading...</div>;
+  if (isPending)
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Skeleton className="h-8 w-32" />
+      </div>
+    );
   if (!session) return null;
   return <>{children}</>;
 }
