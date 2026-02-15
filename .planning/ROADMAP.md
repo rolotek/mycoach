@@ -98,17 +98,18 @@ Plans:
   5. Single pinned coaching thread with separate task threads for agent dispatches
   6. Agent dispatch results show as compact inline summary in coaching thread with link to full result in task thread
   7. Sidebar shows pinned coaching thread at top with reset button, task threads below by recency
-**Plans**: 8 plans
+**Plans**: 9 plans
 
 Plans:
-- [x] 05-01-PLAN.md — shadcn/ui init, design tokens, dark mode, Inter font, app shell with sidebar navigation, shared components (ChatMarkdown, PageHeader)
-- [x] 05-02-PLAN.md — Restyle auth pages (login/signup), dashboard, and settings with shadcn/ui components
-- [x] 05-03-PLAN.md — Restyle chat interface: conversation sidebar, message list with react-markdown, input, agent cards
-- [x] 05-04-PLAN.md — Restyle agents (list + detail), memory, and documents pages with shadcn/ui components
-- [x] 05-05-PLAN.md — Final consistency audit, raw class cleanup, and visual verification checkpoint
-- [ ] 05-06-PLAN.md — Conversation model backend: type/parentId columns, reset mutation, task thread creation on agent dispatch
-- [ ] 05-07-PLAN.md — Conversation model frontend: pinned coaching sidebar, task thread list, inline summary cards, reset button
-- [ ] 05-08-PLAN.md — Build verification + human verification of coaching + task thread UX
+- [x] 05-01-PLAN.md — Design system foundation (shadcn/ui, OKLCH tokens, dark mode, Inter font, app shell, shared components)
+- [x] 05-02-PLAN.md — Auth pages (login/signup) and dashboard/settings restyle with shadcn/ui
+- [x] 05-03-PLAN.md — Chat page restyle (layout, sidebar, message list, agent cards)
+- [x] 05-04-PLAN.md — Agents, memory, and documents pages restyle with shadcn/ui
+- [x] 05-05-PLAN.md — Final consistency audit and human verification
+- [ ] 05-06-PLAN.md — Conversation model backend (type/parentId columns, getOrCreateCoaching, reset, task thread creation)
+- [ ] 05-07-PLAN.md — Chat routing + sidebar refactor (pinned coaching thread, task threads, reset button)
+- [ ] 05-08-PLAN.md — Inline agent dispatch summary cards with "View result" links to task threads
+- [ ] 05-09-PLAN.md — Integration fixes, build verification, and human verification of complete flow
 
 ## Progress
 
@@ -121,4 +122,4 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
 | 3. Agent System | 0/3 | Planned | - |
 | 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
-| 5. UI Polish & Styling | 5/8 | In Progress | - |
+| 5. UI Polish & Styling | 5/9 | In progress | - |
