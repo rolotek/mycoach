@@ -9,6 +9,8 @@ import { AgentResultCard, AgentDeniedCard, AgentSummaryCard } from "./agent-resu
 export type MessageListMessage = {
   id?: string;
   role: string;
+  /** Model id used for this message (e.g. "google:gemini-2.0-flash"). Set by server when persisting. */
+  modelId?: string | null;
   parts: Array<{
     type: string;
     text?: string;
@@ -50,10 +52,25 @@ function normalizeCoachText(raw: string): string {
   return raw;
 }
 
+/** Resolve model id (e.g. "google:gemini-2.0-flash") to display name from providers list. */
+function getModelDisplayName(
+  modelId: string | null | undefined,
+  providers: { id: string; models: { id: string; name: string }[] }[]
+): string | undefined {
+  if (!modelId) return undefined;
+  for (const p of providers) {
+    const m = p.models.find((x) => x.id === modelId);
+    if (m) return m.name;
+  }
+  return undefined;
+}
+
 export function MessageList({
   messages,
   status,
   addToolApprovalResponse,
+  coachModelLabel,
+  providers = [],
 }: {
   messages: MessageListMessage[];
   status: string;
@@ -62,6 +79,10 @@ export function MessageList({
     approved: boolean;
     reason?: string;
   }) => void;
+  /** Unused: kept for backwards compatibility. We only show model when message.modelId is set. */
+  coachModelLabel?: string | null;
+  /** Provider list to resolve message.modelId to display name (per-message). */
+  providers?: { id: string; models: { id: string; name: string }[] }[];
 }) {
   const t = useTranslations("chat");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -196,7 +217,15 @@ export function MessageList({
                 }`}
               >
                 <div className="text-xs font-medium opacity-80">
-                  {isUser ? t("you") : t("coach")}
+                  {isUser
+                    ? t("you")
+                    : (() => {
+                        const label = getModelDisplayName(
+                          (m as MessageListMessage).modelId,
+                          providers
+                        );
+                        return label ? `${t("coach")} · ${label}` : t("coach");
+                      })()}
                 </div>
                 <div className="mt-1 whitespace-pre-wrap break-words">
                   <ChatMarkdown content={text} />

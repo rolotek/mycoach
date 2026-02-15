@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import type { UIMessage } from "ai";
 import { useTranslations } from "next-intl";
@@ -29,11 +29,23 @@ export default function ChatIdPage() {
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const utils = trpc.useUtils();
   const { data: conv, isLoading: convLoading } =
     trpc.conversation.get.useQuery(
       { id: chatId },
       { enabled: !!chatId }
     );
+  const { data: settings } = trpc.settings.get.useQuery();
+  const { data: providers = [] } = trpc.llm.listProviders.useQuery();
+  const coachModelLabel = (() => {
+    const modelId = settings?.preferredModel;
+    if (!modelId) return undefined;
+    for (const p of providers) {
+      const m = p.models.find((x) => x.id === modelId);
+      if (m) return m.name;
+    }
+    return undefined;
+  })();
   const isTaskThread = conv?.type === "task";
 
   const {
@@ -52,17 +64,29 @@ export default function ChatIdPage() {
     milestoneId || null
   );
 
+  const prevStatusRef = useRef<string>(status);
+
   useEffect(() => {
     if (!conv?.messages || !Array.isArray(conv.messages)) return;
     if (conv.messages.length === 0) {
       setMessages([]);
       return;
     }
+    const normalized = conv.messages as UIMessage[];
+    const withIds = normalized.map((m) => ({ ...m, id: m.id ?? crypto.randomUUID() }));
     if (messages.length === 0) {
-      const normalized = conv.messages as UIMessage[];
-      setMessages(normalized.map((m) => ({ ...m, id: m.id ?? crypto.randomUUID() })));
+      setMessages(withIds);
+      prevStatusRef.current = status;
+      return;
     }
-  }, [conv?.messages, messages.length, setMessages]);
+    if (status === "ready" && prevStatusRef.current === "streaming") {
+      utils.conversation.get.invalidate({ id: chatId });
+    }
+    if (status === "ready" && conv.messages.length === messages.length) {
+      setMessages(withIds);
+    }
+    prevStatusRef.current = status;
+  }, [conv?.messages, messages.length, setMessages, status, chatId, utils]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,6 +187,8 @@ export default function ChatIdPage() {
           messages={messages as MessageListMessage[]}
           status={status}
           addToolApprovalResponse={addToolApprovalResponse}
+          coachModelLabel={coachModelLabel}
+          providers={providers}
         />
         {!isTaskThread && (
           <ChatInput

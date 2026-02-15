@@ -12,11 +12,15 @@ import { setupWebAppConsoleLogger } from './utils/console-logger';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
+function en(path: string) {
+  return `${baseURL}/en${path.startsWith('/') ? path : '/' + path}`;
+}
+
 const hasTestUser =
   process.env.TEST_USER_EMAIL && process.env.TEST_USER_PASSWORD;
 
 async function login(page: import('@playwright/test').Page) {
-  await page.goto(`${baseURL}/login`);
+  await page.goto(en('/login'));
   await page.getByRole('textbox', { name: /email/i }).fill(process.env.TEST_USER_EMAIL!);
   await page.getByLabel(/password/i).fill(process.env.TEST_USER_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -152,4 +156,19 @@ test('9. Usage this month shows breakdown table (Model, Est. cost) or empty stat
   if (await hasTable.isVisible()) {
     await expect(usageCard.getByRole('columnheader', { name: 'Est. cost' })).toBeVisible();
   }
+});
+
+test('10. Chat shows Coach message with model name after reply (06-06 per-message model display)', async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await login(page);
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await expect(page.getByPlaceholder(/Message your coach/)).toBeVisible({ timeout: 10000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Reply with one word: OK');
+  await page.getByRole('button', { name: /send/i }).click();
+  await expect(page.getByText(/Coach\s*[·•]\s*.+/, { exact: false }).first()).toBeVisible({
+    timeout: 45000,
+  });
 });

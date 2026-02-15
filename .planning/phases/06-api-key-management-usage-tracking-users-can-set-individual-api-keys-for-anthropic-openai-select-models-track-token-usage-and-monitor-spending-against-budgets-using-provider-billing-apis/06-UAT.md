@@ -1,10 +1,14 @@
 ---
 status: complete
 phase: 06-api-key-management-usage-tracking
-source: 06-01-SUMMARY.md, 06-02-SUMMARY.md, 06-03-SUMMARY.md, 06-04-SUMMARY.md, 06-05-SUMMARY.md
+source: 06-01-SUMMARY.md, 06-02-SUMMARY.md, 06-03-SUMMARY.md, 06-04-SUMMARY.md, 06-05-SUMMARY.md, 06-06-SUMMARY.md
 started: 2026-02-15T00:00:00Z
-updated: 2026-02-15T15:22:00Z
+updated: 2026-02-15T00:00:00Z
 ---
+
+**E2E:** Run Playwright spec for Phase 6 (includes 06-06 per-message model display):
+`npx playwright test e2e/06-api-key-usage.spec.ts`
+Requires TEST_USER_EMAIL, TEST_USER_PASSWORD, dev servers, and a working coach LLM (e.g. Ollama or cloud API key) for test 10.
 
 ## Current Test
 
@@ -48,12 +52,16 @@ result: pass
 expected: In the Usage this month card, either the breakdown table is visible (with column headers such as Model and Est. cost) or the empty state "No usage this period yet" is shown.
 result: pass
 
+### 10. Chat shows Coach message with model name after reply (06-06)
+expected: In chat, after sending a message and receiving a coach reply, the assistant message shows the model used (e.g. "Coach · Gemini 2.0 Flash" or "Coach · Llama 3.1 8B"). Run E2E: `npx playwright test e2e/06-api-key-usage.spec.ts --grep "10"`. Requires a working coach LLM (Ollama or cloud provider with API key in Settings).
+result: [pending — run Playwright test 10]
+
 ## Summary
 
-total: 9
+total: 10
 passed: 9
 issues: 0
-pending: 0
+pending: 1
 skipped: 0
 
 ## Gaps

@@ -221,6 +221,24 @@ async function trackUsage(params: {
   });
 }
 
+/**
+ * Tag the last assistant message with the model id used to generate it, so the UI can show
+ * "Coach · Gemini 2.0 Flash" per message even if the user changes settings later.
+ */
+function tagLastAssistantMessageWithModel(
+  msgs: UIMessage[],
+  modelId: string
+): UIMessage[] {
+  const copy = msgs.slice();
+  for (let i = copy.length - 1; i >= 0; i--) {
+    if (copy[i].role === "assistant") {
+      (copy[i] as UIMessage & { modelId?: string }).modelId = modelId;
+      break;
+    }
+  }
+  return copy;
+}
+
 /** Load project by id and userId; when milestoneId is provided, narrow to section docs/links + project-level. */
 async function loadProjectContext(
   projectId: string,
@@ -471,14 +489,16 @@ chatApp.post("/api/chat", async (c) => {
       mode: effectiveMode,
       projectContext: projectContext || undefined,
     });
+    const coachModelId = `${resolved.provider}:${resolved.modelName}`;
     const agentStream = await createAgentUIStream({
       agent: chiefOfStaff,
       uiMessages: messages,
       onFinish: async ({ messages: updatedMessages }) => {
+        const toSave = tagLastAssistantMessageWithModel(updatedMessages, coachModelId);
         await db
           .update(conversations)
           .set({
-            messages: updatedMessages,
+            messages: toSave,
             updatedAt: new Date(),
             title:
               messages.length <= 2 ? queryText.slice(0, 100) : undefined,
@@ -489,7 +509,7 @@ chatApp.post("/api/chat", async (c) => {
               eq(conversations.userId, user.id)
             )
           );
-        extractFacts(chatId!, user.id, updatedMessages).catch((err) =>
+        extractFacts(chatId!, user.id, toSave).catch((err) =>
           console.error("Fact extraction failed:", err)
         );
       },
@@ -568,10 +588,12 @@ chatApp.post("/api/chat", async (c) => {
         : payload.message;
     },
     onFinish: async ({ messages: updatedMessages }) => {
+      const coachModelId = `${resolved.provider}:${resolved.modelName}`;
+      const toSave = tagLastAssistantMessageWithModel(updatedMessages, coachModelId);
       await db
         .update(conversations)
         .set({
-          messages: updatedMessages,
+          messages: toSave,
           updatedAt: new Date(),
           title:
             messages.length <= 2 ? queryText.slice(0, 100) : undefined,
@@ -583,7 +605,7 @@ chatApp.post("/api/chat", async (c) => {
           )
         );
 
-      extractFacts(chatId!, user.id, updatedMessages).catch((err) =>
+      extractFacts(chatId!, user.id, toSave).catch((err) =>
         console.error("Fact extraction failed:", err)
       );
     },
