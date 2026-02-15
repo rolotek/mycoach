@@ -1,3 +1,12 @@
+import "./load-env";
+
+if (!process.env.DATABASE_URL?.trim()) {
+  console.error(
+    "DATABASE_URL is not set. Add it to the repo root .env (e.g. DATABASE_URL=postgresql://mycoach:mycoach@localhost:5432/mycoach)"
+  );
+  process.exit(1);
+}
+
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";

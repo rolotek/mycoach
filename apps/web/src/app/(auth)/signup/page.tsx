@@ -22,7 +22,7 @@ export default function SignupPage() {
         email,
         password,
         name,
-        callbackURL: "/dashboard",
+        callbackURL: typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard",
       });
       if (result.error) {
         setError(result.error.message ?? "Sign up failed");

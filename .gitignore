@@ -8,3 +8,6 @@ dist/
 .env.local
 .turbo/
 *.tsbuildinfo
+logs/
+e2e-results.json
+test-results/

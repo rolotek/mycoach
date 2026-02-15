@@ -15,6 +15,7 @@ Output: {phase}-UAT.md tracking all test results. If issues found: diagnosed gap
 <execution_context>
 @./.cursor/get-shit-done/workflows/verify-work.md
 @./.cursor/get-shit-done/templates/UAT.md
+@./.planning/verify-work-playwright.md
 </execution_context>
 
 <context>
@@ -29,4 +30,10 @@ Phase: $ARGUMENTS (optional)
 <process>
 Execute the verify-work workflow from @./.cursor/get-shit-done/workflows/verify-work.md end-to-end.
 Preserve all workflow gates (session management, test presentation, diagnosis, fix planning, routing).
+
+After create_uat_file (or when resuming), if the phase has a Playwright spec (e.g. e2e/01-foundation.spec.ts), run the steps in @./.planning/verify-work-playwright.md: run Playwright, merge results into UAT, then continue to present_test (or complete_session).
 </process>
+
+<rules>
+- **Do not edit** `.cursor/get-shit-done/workflows/verify-work.md`. It may be overwritten by GSD updates. All project-specific behavior (e.g. Playwright) lives in this command, @./.planning/verify-work-playwright.md, and scripts/playwright-from-uat.js.
+</rules>

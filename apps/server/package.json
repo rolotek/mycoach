@@ -2,11 +2,13 @@
   "name": "@mycoach/server",
   "version": "0.1.0",
   "private": true,
-  "exports": { "./trpc": "./src/trpc/router.ts" },
+  "exports": {
+    "./trpc": "./src/trpc/router.ts"
+  },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "node scripts/dev-with-logs.js",
     "build": "tsc",
-    "db:push": "drizzle-kit push",
+    "db:push": "node scripts/db-push.js",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
@@ -18,6 +20,7 @@
     "@trpc/server": "^11.10.0",
     "ai": "^6.0.86",
     "better-auth": "^1.4.18",
+    "dotenv": "^17.3.1",
     "drizzle-orm": "^0.41.0",
     "hono": "^4.6.14",
     "pg": "^8.13.1",

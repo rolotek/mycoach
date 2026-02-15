@@ -20,7 +20,7 @@ export default function LoginPage() {
       const result = await authClient.signIn.email({
         email,
         password,
-        callbackURL: "/dashboard",
+        callbackURL: typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard",
       });
       if (result.error) {
         setError(result.error.message ?? "Login failed");
@@ -37,7 +37,7 @@ export default function LoginPage() {
   function handleSocial(provider: "google" | "microsoft") {
     authClient.signIn.social({
       provider,
-      callbackURL: "/dashboard",
+      callbackURL: typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard",
     });
   }
 
