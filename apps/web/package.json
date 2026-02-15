@@ -9,11 +9,13 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.88",
     "@mycoach/server": "*",
     "@tanstack/react-query": "^5.62.0",
     "@trpc/client": "^11.0.0",
     "@trpc/react-query": "^11.10.0",
     "@trpc/tanstack-react-query": "^11.0.0",
+    "ai": "^6.0.86",
     "better-auth": "^1.4.18",
     "next": "^15.0.3",
     "react": "^19.0.0",

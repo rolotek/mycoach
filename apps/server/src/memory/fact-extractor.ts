@@ -42,14 +42,11 @@ export async function extractFacts(
     })
     .join("\n");
 
-  try {
-    let modelId = "anthropic:claude-haiku-3-20250414";
-    try {
-      getModel(modelId);
-    } catch {
-      modelId = "anthropic:claude-sonnet-4-20250514";
-    }
+  const modelId =
+    process.env.COACH_FACT_MODEL ??
+    `ollama:${process.env.OLLAMA_MODEL || "llama3.1"}`;
 
+  try {
     const result = await generateText({
       model: getModel(modelId),
       system: `Extract key facts about the user from this conversation excerpt.

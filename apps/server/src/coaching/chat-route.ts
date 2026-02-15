@@ -62,7 +62,9 @@ chatApp.post("/api/chat", async (c) => {
     .orderBy(desc(userFacts.confidence))
     .limit(20);
 
-  const modelId = "anthropic:claude-sonnet-4-20250514";
+  const modelId =
+    process.env.COACH_CHAT_MODEL ??
+    `ollama:${process.env.OLLAMA_MODEL || "llama3.1"}`;
   const systemPrompt = buildSystemPrompt(
     relevantContext,
     facts,

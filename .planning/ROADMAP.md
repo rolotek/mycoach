@@ -52,7 +52,7 @@ Plans:
 - [x] 02-01-PLAN.md — Database schema (conversations, memories, documents, userFacts) + pgvector + embedding/chunking utilities
 - [x] 02-02-PLAN.md — Streaming chat endpoint + RAG retrieval + mode detection + background fact extraction
 - [x] 02-03-PLAN.md — Document upload/processing pipeline + tRPC CRUD for conversations, documents, and user facts
-- [ ] 02-04-PLAN.md — Chat UI + memory management page + documents page + end-to-end verification
+- [x] 02-04-PLAN.md — Chat UI + memory management page + documents page + end-to-end verification
 
 ### Phase 3: Agent System
 **Goal**: Users can delegate tasks to specialist agents through a chief-of-staff that suggests routing and awaits confirmation
@@ -90,6 +90,6 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Verification | - |
-| 2. Coaching & Memory | 3/4 | In progress | - |
+| 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
 | 3. Agent System | 0/TBD | Not started | - |
 | 4. Agent Evolution | 0/TBD | Not started | - |

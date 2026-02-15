@@ -22,10 +22,28 @@ export default function DashboardPage() {
           Welcome, {session.user?.name ?? "User"}
         </h1>
         <p className="mt-1 text-neutral-600">{session.user?.email}</p>
-        <div className="mt-6 flex gap-4">
+        <div className="mt-6 flex flex-wrap gap-4">
+          <Link
+            href="/chat"
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Start Coaching Session
+          </Link>
+          <Link
+            href="/memory"
+            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            Memory & Knowledge
+          </Link>
+          <Link
+            href="/documents"
+            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            Documents
+          </Link>
           <Link
             href="/settings"
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
           >
             Settings
           </Link>

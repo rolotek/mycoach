@@ -16,7 +16,7 @@ Execute this extension **after** the workflow step `create_uat_file` (or when re
 
 - From verify-work you have `phase_dir` (e.g. `.planning/phases/01-foundation`) and phase number (e.g. `01`).
 - UAT file: `{phase_dir}/{phase}-UAT.md` (e.g. `01-UAT.md`).
-- Playwright spec: `e2e/{phase}-foundation.spec.ts` or `e2e/{phase}-*.spec.ts` (one spec file per phase; naming must match phase so the script can find it). For phase `01-foundation` the spec is `e2e/01-foundation.spec.ts`.
+- Playwright spec: `e2e/{phase}-*.spec.ts` (one spec file per phase; script finds by convention). Examples: `e2e/01-foundation.spec.ts`, `e2e/02-coaching-memory.spec.ts`.
 
 ### 2. Run Playwright and merge
 
@@ -47,8 +47,15 @@ node scripts/playwright-from-uat.js --phase 01
 - It reads the UAT file, runs the phase’s Playwright spec, parses results (test title must match `N. Test name` for mapping), and writes back only tests that were `[pending]` and now have a Playwright outcome. It does not overwrite existing `pass` / `issue` / `skipped`.
 - Specs live under `e2e/` and use titles like `1. Dev server starts` so the script can map by number.
 
+## Phases with Playwright specs
+
+| Phase | Spec | Notes |
+|-------|------|--------|
+| 01-foundation | `e2e/01-foundation.spec.ts` | Auth, settings, isolation, OAuth buttons |
+| 02-coaching-memory | `e2e/02-coaching-memory.spec.ts` | Chat, streaming, mode toggle, sidebar, documents, memory, dashboard. Requires TEST_USER_EMAIL/PASSWORD; LLM (e.g. Ollama) for chat tests. |
+
 ## Adding Playwright for a new phase
 
-1. Add `e2e/{phase}-{name}.spec.ts` (e.g. `e2e/02-coaching.spec.ts`) with test titles matching the UAT test list (`N. Test name`).
-2. Ensure `playwright-from-uat.js` can resolve phase → spec (e.g. by convention `e2e/{phase}-*.spec.ts`).
-3. No change to this extension file unless you want to document the new phase.
+1. Add `e2e/{phase}-{name}.spec.ts` (e.g. `e2e/03-agent.spec.ts`) with test titles matching the UAT test list (`N. Test name`).
+2. Ensure `playwright-from-uat.js` can resolve phase → spec (by convention `e2e/{phase}-*.spec.ts`).
+3. Add a row to the **Phases with Playwright specs** table above.
