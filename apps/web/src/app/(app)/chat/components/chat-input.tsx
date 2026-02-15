@@ -1,6 +1,9 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 export function ChatInput({
   input,
@@ -24,9 +27,9 @@ export function ChatInput({
   }, [input]);
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-neutral-200 p-4">
+    <form onSubmit={handleSubmit} className="shrink-0 border-t border-border bg-card p-4">
       <div className="flex gap-2">
-        <textarea
+        <Textarea
           ref={textareaRef}
           value={input}
           onChange={handleInputChange}
@@ -40,16 +43,17 @@ export function ChatInput({
           }}
           placeholder="Message your coach..."
           rows={1}
-          className="max-h-[120px] flex-1 resize-none rounded-lg border border-neutral-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="max-h-[120px] min-h-[40px] flex-1 resize-none focus-visible:ring-1 focus-visible:ring-ring"
           disabled={isStreaming}
         />
-        <button
+        <Button
           type="submit"
+          size="icon"
           disabled={!input.trim() || isStreaming}
-          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          aria-label="Send"
         >
-          Send
-        </button>
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </form>
   );

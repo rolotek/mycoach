@@ -3,18 +3,22 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import type { UIMessage } from "ai";
+import { Menu } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useCoachingChat } from "@/hooks/use-coaching-chat";
 import { MessageList, type MessageListMessage } from "../components/message-list";
 import { ChatInput } from "../components/chat-input";
 import { ModeToggle } from "../components/mode-toggle";
 import { ConversationSidebar } from "../components/conversation-sidebar";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatIdPage() {
   const params = useParams();
   const chatId = params.id as string;
   const [mode, setMode] = useState("auto");
   const [input, setInput] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { data: conv, isLoading: convLoading } =
     trpc.conversation.get.useQuery(
@@ -48,23 +52,43 @@ export default function ChatIdPage() {
   if (!chatId) return null;
   if (convLoading) {
     return (
-      <div className="flex min-h-screen">
-        <ConversationSidebar activeChatId={chatId} />
-        <div className="flex flex-1 items-center justify-center">
-          Loading...
+      <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+        <div className="hidden w-64 shrink-0 border-r border-border bg-card md:block">
+          <Skeleton className="m-2 h-9 w-full" />
+          <Skeleton className="m-2 h-12 w-full" />
+          <Skeleton className="m-2 h-12 w-full" />
+        </div>
+        <div className="flex flex-1 flex-col items-center justify-center min-w-0">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="mt-4 h-32 w-64" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen">
-      <ConversationSidebar activeChatId={chatId} />
-      <main className="flex flex-1 flex-col bg-neutral-50">
-        <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-2">
-          <h1 className="text-lg font-medium text-neutral-900">Coach</h1>
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+      <ConversationSidebar
+        activeChatId={chatId}
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+      />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open conversations"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-medium text-foreground">Coach</h1>
+          </div>
           <ModeToggle mode={mode} onChange={setMode} />
-        </div>
+        </header>
         <MessageList
           messages={messages as MessageListMessage[]}
           status={status}
@@ -76,7 +100,7 @@ export default function ChatIdPage() {
           handleSubmit={handleSubmit}
           status={status}
         />
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { ChatMarkdown } from "@/components/chat-markdown";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 export function FeedbackButtons({
   executionId,
@@ -44,96 +49,56 @@ export function FeedbackButtons({
 
   if (submitted === "positive") {
     return (
-      <div className="mt-2 border-t border-green-200 pt-2 text-sm text-neutral-500">
+      <div className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">
         Thanks for the feedback
       </div>
     );
   }
   if (submitted === "negative" && showCorrection) {
     return (
-      <div className="mt-2 border-t border-green-200 pt-2">
-        <textarea
+      <div className="mt-2 border-t border-border pt-2">
+        <Textarea
           placeholder="What should have been different?"
           value={correctionText}
           onChange={(e) => setCorrectionText(e.target.value)}
-          className="mb-2 w-full rounded border border-neutral-200 px-2 py-1 text-sm"
+          className="mb-2 min-h-[60px]"
           rows={2}
         />
-        <button
-          type="button"
-          onClick={submitCorrection}
-          className="rounded bg-neutral-200 px-2 py-1 text-sm hover:bg-neutral-300"
-        >
+        <Button size="sm" variant="secondary" onClick={submitCorrection}>
           Submit correction
-        </button>
+        </Button>
       </div>
     );
   }
   if (submitted === "negative" && !showCorrection) {
     return (
-      <div className="mt-2 border-t border-green-200 pt-2 text-sm text-neutral-500">
+      <div className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">
         Noted — this will help improve future results
       </div>
     );
   }
   return (
-    <div className="mt-2 flex items-center gap-2 border-t border-green-200 pt-2">
-      <button
-        type="button"
+    <div className="mt-2 flex items-center gap-2 border-t border-border pt-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
         onClick={submitPositive}
-        className="rounded p-1.5 text-neutral-500 hover:bg-green-50 hover:text-green-600"
         title="Thumbs up"
       >
-        +1
-      </button>
-      <button
-        type="button"
+        <ThumbsUp className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
         onClick={submitNegative}
-        className="rounded p-1.5 text-neutral-500 hover:bg-red-50 hover:text-red-600"
         title="Thumbs down"
       >
-        -1
-      </button>
+        <ThumbsDown className="h-4 w-4" />
+      </Button>
     </div>
   );
-}
-
-function renderMarkdown(text: string): React.ReactNode {
-  const lines = text.split("\n");
-  return lines.map((line, i) => {
-    const parts: React.ReactNode[] = [];
-    let rest = line;
-    while (rest.length > 0) {
-      const boldMatch = rest.match(/\*\*(.+?)\*\*/);
-      const listMatch = rest.match(/^-\s+/);
-      if (listMatch) {
-        parts.push(
-          <span key={`${i}-list`} className="ml-4 list-disc">
-            • {rest.slice(listMatch[0].length)}
-          </span>
-        );
-        break;
-      }
-      if (boldMatch && boldMatch.index !== undefined) {
-        if (boldMatch.index > 0) {
-          parts.push(rest.slice(0, boldMatch.index));
-        }
-        parts.push(
-          <strong key={`${i}-b-${parts.length}`}>{boldMatch[1]}</strong>
-        );
-        rest = rest.slice(boldMatch.index + boldMatch[0].length);
-      } else {
-        parts.push(rest);
-        break;
-      }
-    }
-    return (
-      <span key={i}>
-        {parts.length ? parts : line}
-        {i < lines.length - 1 && <br />}
-      </span>
-    );
-  });
 }
 
 export function AgentResultCard({
@@ -148,12 +113,13 @@ export function AgentResultCard({
   agentId?: string;
 }) {
   return (
-    <div className="rounded-lg border-2 border-green-200 bg-green-50/50 px-4 py-3">
-      <div className="text-sm font-medium text-green-900">
-        Result from {agentName}
+    <div className="rounded-lg border border-border border-l-4 border-l-primary bg-card px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-foreground">Result from</span>
+        <Badge variant="secondary">{agentName}</Badge>
       </div>
-      <div className="mt-2 whitespace-pre-wrap break-words text-sm text-neutral-800">
-        {renderMarkdown(result)}
+      <div className="mt-2 break-words text-sm text-foreground">
+        <ChatMarkdown content={result} />
       </div>
       {executionId && agentId && (
         <FeedbackButtons executionId={executionId} agentId={agentId} />
@@ -164,7 +130,7 @@ export function AgentResultCard({
 
 export function AgentDeniedCard() {
   return (
-    <div className="rounded-lg border border-neutral-200 bg-neutral-100 px-4 py-2 text-sm text-neutral-500">
+    <div className="rounded-lg border border-border bg-muted px-4 py-2 text-sm text-muted-foreground">
       Agent dispatch was declined
     </div>
   );
