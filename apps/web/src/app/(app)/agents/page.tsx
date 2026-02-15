@@ -1,22 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 
 export default function AgentsPage() {
   const utils = trpc.useUtils();
-  const { data: agents, isLoading } = trpc.agent.list.useQuery();
+  const { data: agents, isLoading } = trpc.agent.listAll.useQuery();
   const createMut = trpc.agent.create.useMutation({
-    onSuccess: () => utils.agent.list.invalidate(),
+    onSuccess: () => utils.agent.listAll.invalidate(),
   });
   const updateMut = trpc.agent.update.useMutation({
     onSuccess: () => {
-      utils.agent.list.invalidate();
+      utils.agent.listAll.invalidate();
       setEditingId(null);
     },
   });
   const deleteMut = trpc.agent.delete.useMutation({
-    onSuccess: () => utils.agent.list.invalidate(),
+    onSuccess: () => utils.agent.listAll.invalidate(),
+  });
+  const archiveMut = trpc.agent.archive.useMutation({
+    onSuccess: () => utils.agent.listAll.invalidate(),
+  });
+  const unarchiveMut = trpc.agent.unarchive.useMutation({
+    onSuccess: () => utils.agent.listAll.invalidate(),
   });
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -189,22 +196,30 @@ export default function AgentsPage() {
             {agents.map((a) => (
               <div
                 key={a.id}
-                className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+                className={`rounded-lg border border-neutral-200 bg-white p-4 shadow-sm ${a.archivedAt ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {a.icon && (
                         <span className="text-lg" aria-hidden>
                           {a.icon}
                         </span>
                       )}
-                      <span className="font-semibold text-neutral-900">
+                      <Link
+                        href={`/agents/${a.id}`}
+                        className="font-semibold text-neutral-900 hover:underline"
+                      >
                         {a.name}
-                      </span>
+                      </Link>
                       {a.isStarter && (
                         <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
                           Starter
+                        </span>
+                      )}
+                      {a.archivedAt && (
+                        <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-xs text-neutral-600">
+                          Archived
                         </span>
                       )}
                     </div>
@@ -213,21 +228,49 @@ export default function AgentsPage() {
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openEdit(a)}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {!a.archivedAt && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => openEdit(a)}
+                        className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => archiveMut.mutate({ id: a.id })}
+                        className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                      >
+                        Archive
+                      </button>
+                    </>
+                  )}
+                  {a.archivedAt && (
+                    <button
+                      type="button"
+                      onClick={() => unarchiveMut.mutate({ id: a.id })}
+                      className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                    >
+                      Unarchive
+                    </button>
+                  )}
+                  <Link
+                    href={`/agents/${a.id}`}
                     className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
                   >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(a.id)}
-                    className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                  >
-                    Delete
-                  </button>
+                    View History
+                  </Link>
+                  {!a.archivedAt && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(a.id)}
+                      className="rounded border border-neutral-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
