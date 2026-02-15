@@ -78,10 +78,12 @@ Plans:
   1. User can provide feedback on agent outputs (corrections, preferences, thumbs up/down) and the system records it
   2. Agent behavior visibly improves for a specific user after repeated feedback -- prompts evolve based on accumulated feedback patterns
   3. User can view, edit, version, and archive their agents through a management interface
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md — DB schema (agentFeedback, agentVersions, archivedAt) + archive filter in chat route
+- [ ] 04-02-PLAN.md — Prompt evolution pipeline + feedback/version/archive tRPC procedures
+- [ ] 04-03-PLAN.md — Feedback UI in chat + agent management page with version history and archive
 
 ## Progress
 
@@ -93,4 +95,4 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 | 1. Foundation | 4/4 | Verification | - |
 | 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
 | 3. Agent System | 0/3 | Planned | - |
-| 4. Agent Evolution | 0/TBD | Not started | - |
+| 4. Agent Evolution | 0/3 | Planned | - |
