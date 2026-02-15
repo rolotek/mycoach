@@ -7,7 +7,10 @@ import {
   documents,
   userFacts,
   memories,
+  agents,
+  agentExecutions,
 } from "../db/schema";
+import { seedStarterAgents } from "../agents/templates";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import { updateSettingsSchema } from "@mycoach/shared";
 import { embedText } from "../memory/embeddings";
@@ -304,12 +307,126 @@ const userFactRouter = t.router({
     }),
 });
 
+function slugFromName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}
+
+const agentRouter = t.router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    await seedStarterAgents(ctx.db, ctx.user.id);
+    return ctx.db
+      .select()
+      .from(agents)
+      .where(eq(agents.userId, ctx.user.id))
+      .orderBy(asc(agents.name));
+  }),
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().min(1).max(500),
+        systemPrompt: z.string().min(1),
+        icon: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      let slug = slugFromName(input.name);
+      const baseSlug = slug;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const [row] = await ctx.db
+            .insert(agents)
+            .values({
+              userId: ctx.user.id,
+              name: input.name,
+              slug,
+              description: input.description,
+              systemPrompt: input.systemPrompt,
+              icon: input.icon ?? null,
+              isStarter: false,
+            })
+            .returning();
+          return row!;
+        } catch (err) {
+          const isUniqueViolation =
+            err &&
+            typeof err === "object" &&
+            "code" in err &&
+            (err as { code: string }).code === "23505";
+          if (isUniqueViolation && attempt === 0) {
+            slug = `${baseSlug}-${Date.now()}`;
+            continue;
+          }
+          throw err;
+        }
+      }
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(100).optional(),
+        description: z.string().min(1).max(500).optional(),
+        systemPrompt: z.string().min(1).optional(),
+        icon: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updates: {
+        name?: string;
+        slug?: string;
+        description?: string;
+        systemPrompt?: string;
+        icon?: string | null;
+        updatedAt: Date;
+      } = { updatedAt: new Date() };
+      if (input.name !== undefined) {
+        updates.name = input.name;
+        updates.slug = slugFromName(input.name);
+      }
+      if (input.description !== undefined) updates.description = input.description;
+      if (input.systemPrompt !== undefined) updates.systemPrompt = input.systemPrompt;
+      if (input.icon !== undefined) updates.icon = input.icon ?? null;
+
+      const [updated] = await ctx.db
+        .update(agents)
+        .set(updates)
+        .where(
+          and(
+            eq(agents.id, input.id),
+            eq(agents.userId, ctx.user.id)
+          )
+        )
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(agents)
+        .where(
+          and(
+            eq(agents.id, input.id),
+            eq(agents.userId, ctx.user.id)
+          )
+        );
+      return { success: true };
+    }),
+});
+
 export const appRouter = t.router({
   settings: settingsRouter,
   llm: llmRouter,
   conversation: conversationRouter,
   document: documentRouter,
   userFact: userFactRouter,
+  agent: agentRouter,
 });
 
 export type AppRouter = typeof appRouter;
