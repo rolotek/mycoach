@@ -9,9 +9,12 @@ import {
   memories,
   agents,
   agentExecutions,
+  agentFeedback,
+  agentVersions,
 } from "../db/schema";
 import { seedStarterAgents } from "../agents/templates";
-import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { checkAndEvolveAgent, saveAgentVersion } from "../agents/prompt-evolver";
+import { eq, and, desc, asc, sql, isNull } from "drizzle-orm";
 import { updateSettingsSchema } from "@mycoach/shared";
 import { embedText } from "../memory/embeddings";
 
@@ -314,14 +317,139 @@ function slugFromName(name: string): string {
     .replace(/[^a-z0-9-]/g, "");
 }
 
+const agentFeedbackRouter = t.router({
+  create: protectedProcedure
+    .input(
+      z.object({
+        agentId: z.string().uuid(),
+        executionId: z.string().uuid().optional(),
+        rating: z.enum(["positive", "negative"]),
+        correction: z.string().max(1000).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(agentFeedback)
+        .values({
+          userId: ctx.user.id,
+          agentId: input.agentId,
+          executionId: input.executionId ?? null,
+          rating: input.rating,
+          correction: input.correction ?? null,
+        })
+        .returning();
+      if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      checkAndEvolveAgent(input.agentId, ctx.user.id).catch((err) =>
+        console.error("Evolution check failed:", err)
+      );
+      return row;
+    }),
+  listByAgent: protectedProcedure
+    .input(z.object({ agentId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db
+        .select()
+        .from(agentFeedback)
+        .where(
+          and(
+            eq(agentFeedback.agentId, input.agentId),
+            eq(agentFeedback.userId, ctx.user.id)
+          )
+        )
+        .orderBy(desc(agentFeedback.createdAt));
+    }),
+});
+
+const agentVersionRouter = t.router({
+  list: protectedProcedure
+    .input(z.object({ agentId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [agent] = await ctx.db
+        .select()
+        .from(agents)
+        .where(
+          and(
+            eq(agents.id, input.agentId),
+            eq(agents.userId, ctx.user.id)
+          )
+        );
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND" });
+      return ctx.db
+        .select()
+        .from(agentVersions)
+        .where(eq(agentVersions.agentId, input.agentId))
+        .orderBy(desc(agentVersions.version))
+        .limit(20);
+    }),
+  revert: protectedProcedure
+    .input(
+      z.object({
+        agentId: z.string().uuid(),
+        versionId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [agent] = await ctx.db
+        .select()
+        .from(agents)
+        .where(
+          and(
+            eq(agents.id, input.agentId),
+            eq(agents.userId, ctx.user.id)
+          )
+        );
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND" });
+      const [targetVersion] = await ctx.db
+        .select()
+        .from(agentVersions)
+        .where(
+          and(
+            eq(agentVersions.id, input.versionId),
+            eq(agentVersions.agentId, input.agentId)
+          )
+        );
+      if (!targetVersion) throw new TRPCError({ code: "NOT_FOUND" });
+      await saveAgentVersion(
+        ctx.db,
+        input.agentId,
+        agent.systemPrompt,
+        "manual",
+        `Reverted to version ${targetVersion.version}`
+      );
+      const [updated] = await ctx.db
+        .update(agents)
+        .set({
+          systemPrompt: targetVersion.systemPrompt,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(agents.id, input.agentId),
+            eq(agents.userId, ctx.user.id)
+          )
+        )
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+});
+
 const agentRouter = t.router({
   list: protectedProcedure.query(async ({ ctx }) => {
     await seedStarterAgents(ctx.db, ctx.user.id);
     return ctx.db
       .select()
       .from(agents)
-      .where(eq(agents.userId, ctx.user.id))
+      .where(and(eq(agents.userId, ctx.user.id), isNull(agents.archivedAt)))
       .orderBy(asc(agents.name));
+  }),
+  listAll: protectedProcedure.query(async ({ ctx }) => {
+    await seedStarterAgents(ctx.db, ctx.user.id);
+    return ctx.db
+      .select()
+      .from(agents)
+      .where(eq(agents.userId, ctx.user.id))
+      .orderBy(asc(agents.archivedAt), asc(agents.name));
   }),
   create: protectedProcedure
     .input(
@@ -376,6 +504,17 @@ const agentRouter = t.router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const [existingAgent] = await ctx.db
+        .select()
+        .from(agents)
+        .where(
+          and(
+            eq(agents.id, input.id),
+            eq(agents.userId, ctx.user.id)
+          )
+        );
+      if (!existingAgent) throw new TRPCError({ code: "NOT_FOUND" });
+
       const updates: {
         name?: string;
         slug?: string;
@@ -389,7 +528,18 @@ const agentRouter = t.router({
         updates.slug = slugFromName(input.name);
       }
       if (input.description !== undefined) updates.description = input.description;
-      if (input.systemPrompt !== undefined) updates.systemPrompt = input.systemPrompt;
+      if (input.systemPrompt !== undefined) {
+        if (input.systemPrompt !== existingAgent.systemPrompt) {
+          await saveAgentVersion(
+            ctx.db,
+            input.id,
+            existingAgent.systemPrompt,
+            "manual",
+            null
+          );
+        }
+        updates.systemPrompt = input.systemPrompt;
+      }
       if (input.icon !== undefined) updates.icon = input.icon ?? null;
 
       const [updated] = await ctx.db
@@ -404,6 +554,32 @@ const agentRouter = t.router({
         .returning();
       if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
       return updated;
+    }),
+  archive: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(agents)
+        .set({ archivedAt: new Date() })
+        .where(
+          and(
+            eq(agents.id, input.id),
+            eq(agents.userId, ctx.user.id),
+            isNull(agents.archivedAt)
+          )
+        );
+      return { success: true };
+    }),
+  unarchive: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(agents)
+        .set({ archivedAt: null })
+        .where(
+          and(eq(agents.id, input.id), eq(agents.userId, ctx.user.id))
+        );
+      return { success: true };
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
@@ -427,6 +603,8 @@ export const appRouter = t.router({
   document: documentRouter,
   userFact: userFactRouter,
   agent: agentRouter,
+  agentFeedback: agentFeedbackRouter,
+  agentVersion: agentVersionRouter,
 });
 
 export type AppRouter = typeof appRouter;
