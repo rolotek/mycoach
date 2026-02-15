@@ -8,6 +8,7 @@ import {
   Bot,
   Brain,
   FileText,
+  FolderKanban,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const navItems = [
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/documents", label: "Documents", icon: FileText },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
