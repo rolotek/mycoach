@@ -222,18 +222,31 @@ async function trackUsage(params: {
 }
 
 /**
- * Tag the last assistant message with the model id used to generate it, so the UI can show
- * "Coach · Gemini 2.0 Flash" per message even if the user changes settings later.
+ * Preserve modelId on existing assistant messages and tag the last one with the current model.
+ * The stream's updatedMessages do not include modelId for previous turns, so we merge from
+ * existingMessages (from DB) to avoid losing "Coach · Ollama" when saving a new "Coach · Gemini" reply.
  */
-function tagLastAssistantMessageWithModel(
-  msgs: UIMessage[],
-  modelId: string
+function preserveAndTagModelIds(
+  updatedMessages: UIMessage[],
+  existingMessages: UIMessage[] | null,
+  currentModelId: string
 ): UIMessage[] {
-  const copy = msgs.slice();
+  const copy = updatedMessages.map((m) => ({ ...m }));
+  let lastAssistantIndex = -1;
   for (let i = copy.length - 1; i >= 0; i--) {
     if (copy[i].role === "assistant") {
-      (copy[i] as UIMessage & { modelId?: string }).modelId = modelId;
+      lastAssistantIndex = i;
       break;
+    }
+  }
+  for (let i = 0; i < copy.length; i++) {
+    if (copy[i].role === "assistant") {
+      const existing = existingMessages?.[i] as (UIMessage & { modelId?: string }) | undefined;
+      if (i === lastAssistantIndex) {
+        (copy[i] as UIMessage & { modelId?: string }).modelId = currentModelId;
+      } else if (existing?.modelId) {
+        (copy[i] as UIMessage & { modelId?: string }).modelId = existing.modelId;
+      }
     }
   }
   return copy;
@@ -494,7 +507,21 @@ chatApp.post("/api/chat", async (c) => {
       agent: chiefOfStaff,
       uiMessages: messages,
       onFinish: async ({ messages: updatedMessages }) => {
-        const toSave = tagLastAssistantMessageWithModel(updatedMessages, coachModelId);
+        const [existingConv] = await db
+          .select({ messages: conversations.messages })
+          .from(conversations)
+          .where(
+            and(
+              eq(conversations.id, chatId!),
+              eq(conversations.userId, user.id)
+            )
+          );
+        const existingMessages = (existingConv?.messages ?? null) as UIMessage[] | null;
+        const toSave = preserveAndTagModelIds(
+          updatedMessages,
+          existingMessages,
+          coachModelId
+        );
         await db
           .update(conversations)
           .set({
@@ -589,7 +616,21 @@ chatApp.post("/api/chat", async (c) => {
     },
     onFinish: async ({ messages: updatedMessages }) => {
       const coachModelId = `${resolved.provider}:${resolved.modelName}`;
-      const toSave = tagLastAssistantMessageWithModel(updatedMessages, coachModelId);
+      const [existingConv] = await db
+        .select({ messages: conversations.messages })
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.id, chatId!),
+            eq(conversations.userId, user.id)
+          )
+        );
+      const existingMessages = (existingConv?.messages ?? null) as UIMessage[] | null;
+      const toSave = preserveAndTagModelIds(
+        updatedMessages,
+        existingMessages,
+        coachModelId
+      );
       await db
         .update(conversations)
         .set({
