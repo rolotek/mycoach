@@ -14,11 +14,15 @@ import { setupWebAppConsoleLogger } from './utils/console-logger';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
+function en(path: string) {
+  return `${baseURL}/en${path.startsWith('/') ? path : '/' + path}`;
+}
+
 const hasTestUser =
   process.env.TEST_USER_EMAIL && process.env.TEST_USER_PASSWORD;
 
 async function login(page: import('@playwright/test').Page) {
-  await page.goto(`${baseURL}/login`);
+  await page.goto(en('/login'));
   await page.getByRole('textbox', { name: /email/i }).fill(process.env.TEST_USER_EMAIL!);
   await page.getByLabel(/password/i).fill(process.env.TEST_USER_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -32,14 +36,14 @@ test.beforeEach(async ({ page }, testInfo) => {
 
 test('1. Sidebar shows Projects link', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/dashboard`);
+  await page.goto(en('/dashboard'));
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
   await expect(page.getByRole('link', { name: 'Projects' }).first()).toBeVisible({ timeout: 10000 });
 });
 
 test('2. Projects list page shows heading, description, and New project button', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible({ timeout: 10000 });
   await expect(
@@ -50,16 +54,16 @@ test('2. Projects list page shows heading, description, and New project button',
 
 test('3. Projects list shows empty state or project cards', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   const emptyState = page.getByText(/No projects yet/i);
-  const projectLinks = page.locator('a[href^="/projects/"]');
+  const projectLinks = page.locator('a[href*="/projects/"]');
   await expect(emptyState.or(projectLinks.first())).toBeVisible({ timeout: 10000 });
 });
 
 test('4. New project dialog opens and has name and description fields', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'New project' })).toBeVisible({
@@ -73,7 +77,7 @@ test('4. New project dialog opens and has name and description fields', async ({
 
 test('5. Create project redirects to project detail', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'New project' })).toBeVisible({
@@ -90,11 +94,11 @@ test('6. Project detail shows Definition, Documents & links, Milestones, Tasks s
   page,
 }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   const newBtn = page.getByRole('button', { name: 'New project' });
   if (!(await newBtn.isVisible())) {
-    const firstLink = page.locator('a[href^="/projects/"]').first();
+    const firstLink = page.locator('a[href*="/projects/"]').first();
     await expect(firstLink).toBeVisible({ timeout: 5000 });
     await firstLink.click();
   } else {
@@ -113,7 +117,7 @@ test('6. Project detail shows Definition, Documents & links, Milestones, Tasks s
 
 test('7. Project detail has Open chat for this project button', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await page.getByRole('dialog').getByLabel('Name').fill(`E2E Chat ${Date.now()}`);
@@ -126,7 +130,7 @@ test('7. Project detail has Open chat for this project button', async ({ page })
 
 test('8. Open chat for this project navigates to chat with projectId', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await page.getByRole('dialog').getByLabel('Name').fill(`E2E Nav ${Date.now()}`);
@@ -136,12 +140,12 @@ test('8. Open chat for this project navigates to chat with projectId', async ({ 
   await page.getByRole('link', { name: 'Open chat for this project' }).click();
   await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
   expect(page.url()).toContain(`projectId=${projectId}`);
-  await expect(page.getByPlaceholder('Message your coach...')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByPlaceholder(/Message your coach/)).toBeVisible({ timeout: 10000 });
 });
 
 test('9. Add link to project', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await page.getByRole('dialog').getByLabel('Name').fill(`E2E Links ${Date.now()}`);
@@ -155,7 +159,7 @@ test('9. Add link to project', async ({ page }) => {
 
 test('10. Add milestone to project', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await page.getByRole('dialog').getByLabel('Name').fill(`E2E Milestones ${Date.now()}`);
@@ -169,7 +173,7 @@ test('10. Add milestone to project', async ({ page }) => {
 
 test('11. Add task to project', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await page.getByRole('dialog').getByLabel('Name').fill(`E2E Tasks ${Date.now()}`);
@@ -183,7 +187,7 @@ test('11. Add task to project', async ({ page }) => {
 
 test('12. Add task directly to a milestone', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await page.getByRole('dialog').getByLabel('Name').fill(`E2E Milestone Task ${Date.now()}`);
@@ -202,7 +206,7 @@ test('12. Add task directly to a milestone', async ({ page }) => {
 
 test('13. Definition section has status select and due date', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
   await page.getByRole('button', { name: 'New project' }).click();
   await page.getByRole('dialog').getByLabel('Name').fill(`E2E Def ${Date.now()}`);
@@ -217,9 +221,9 @@ test('13. Definition section has status select and due date', async ({ page }) =
 
 test('14. Back to Projects returns to list', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/projects`);
+  await page.goto(en('/projects'));
   await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
-  const firstLink = page.locator('a[href^="/projects/"]').first();
+  const firstLink = page.locator('a[href*="/projects/"]').first();
   if (await firstLink.isVisible()) {
     await firstLink.click();
     await expect(page).toHaveURL(/\/projects\/[a-f0-9-]+/, { timeout: 5000 });
@@ -230,6 +234,81 @@ test('14. Back to Projects returns to list', async ({ page }) => {
     await expect(page).toHaveURL(/\/projects\/[a-f0-9-]+/, { timeout: 10000 });
   }
   await page.getByRole('link', { name: 'Back to Projects' }).click();
-  await expect(page).toHaveURL(/\/projects$/, { timeout: 5000 });
+  await expect(page).toHaveURL(/\/projects(\?|$)/, { timeout: 5000 });
   await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible();
+});
+
+// --- Global vs project vs section chat (distinct conversations) ---
+
+test('15. Global chat: /chat opens single coaching thread without projectId', async ({ page }) => {
+  await login(page);
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  const url = page.url();
+  expect(url).not.toContain('projectId=');
+  await expect(page.getByPlaceholder(/Message your coach/)).toBeVisible({ timeout: 10000 });
+  const globalChatId = url.match(/\/chat\/([a-f0-9-]+)/)?.[1];
+  expect(globalChatId).toBeDefined();
+  // Visiting /chat again must open the same global thread (no projectId)
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(new RegExp(`/chat/${globalChatId}(\\?|$)`), { timeout: 15000 });
+  expect(page.url()).not.toContain('projectId=');
+});
+
+test('16. Project chat: /chat?projectId= opens project-scoped thread distinct from global', async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  const globalId = page.url().match(/\/chat\/([a-f0-9-]+)/)?.[1];
+  await page.goto(en('/projects'));
+  await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
+  await page.getByRole('button', { name: 'New project' }).click();
+  await page.getByRole('dialog').getByLabel('Name').fill(`E2E Project Chat ${Date.now()}`);
+  await page.getByRole('dialog').getByRole('button', { name: 'Create' }).click();
+  await expect(page).toHaveURL(/\/projects\/[a-f0-9-]+/, { timeout: 10000 });
+  const projectId = page.url().split('/projects/')[1]?.split('?')[0]?.split('#')[0] ?? '';
+  expect(projectId).toMatch(/^[a-f0-9-]+$/);
+  await page.getByRole('link', { name: 'Open chat for this project' }).click();
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  expect(page.url()).toContain(`projectId=${projectId}`);
+  const projectChatId = page.url().match(/\/chat\/([a-f0-9-]+)/)?.[1];
+  expect(projectChatId).not.toBe(globalId);
+  await expect(page.getByPlaceholder(/Message your coach/)).toBeVisible({ timeout: 10000 });
+});
+
+test('17. Section chat: Chat about this section opens section-scoped thread distinct from project and global', async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  const globalId = page.url().match(/\/chat\/([a-f0-9-]+)/)?.[1];
+  await page.goto(en('/projects'));
+  await expect(page).toHaveURL(/\/projects/, { timeout: 10000 });
+  await page.getByRole('button', { name: 'New project' }).click();
+  await page.getByRole('dialog').getByLabel('Name').fill(`E2E Section Chat ${Date.now()}`);
+  await page.getByRole('dialog').getByRole('button', { name: 'Create' }).click();
+  await expect(page).toHaveURL(/\/projects\/[a-f0-9-]+/, { timeout: 10000 });
+  const projectId = page.url().split('/projects/')[1]?.split('?')[0]?.split('#')[0] ?? '';
+  const sectionTitle = `Section ${Date.now()}`;
+  await page.getByPlaceholder('Milestone title').fill(sectionTitle);
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.getByText(sectionTitle)).toBeVisible({ timeout: 5000 });
+  await page.getByRole('link', { name: 'Open chat for this project' }).click();
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  expect(page.url()).toContain(`projectId=${projectId}`);
+  const projectChatId = page.url().match(/\/chat\/([a-f0-9-]+)/)?.[1];
+  await page.goto(en(`/projects/${projectId}`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${projectId}`), { timeout: 10000 });
+  const sectionChatLink = page.getByRole('link', { name: 'Chat about this section' }).first();
+  await expect(sectionChatLink).toBeVisible({ timeout: 5000 });
+  await sectionChatLink.click();
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  expect(page.url()).toContain('projectId=');
+  expect(page.url()).toContain('milestoneId=');
+  const sectionChatId = page.url().match(/\/chat\/([a-f0-9-]+)/)?.[1];
+  expect(sectionChatId).not.toBe(globalId);
+  expect(sectionChatId).not.toBe(projectChatId);
 });

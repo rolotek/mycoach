@@ -358,6 +358,67 @@ const conversationRouter = t.router({
       .returning();
     return row!;
   }),
+  getOrCreateProjectThread: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        milestoneId: z.string().uuid().nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify project (and optionally milestone) belongs to user
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      const milestoneId = input.milestoneId ?? null;
+      if (milestoneId) {
+        const [milestone] = await ctx.db
+          .select()
+          .from(projectMilestones)
+          .where(
+            and(
+              eq(projectMilestones.id, milestoneId),
+              eq(projectMilestones.projectId, input.projectId)
+            )
+          );
+        if (!milestone) throw new TRPCError({ code: "NOT_FOUND", message: "Milestone not found" });
+      }
+      const conditions = [
+        eq(conversations.userId, ctx.user.id),
+        eq(conversations.type, "coaching"),
+        eq(conversations.projectId, input.projectId),
+      ];
+      if (milestoneId === null) {
+        conditions.push(isNull(conversations.milestoneId));
+      } else {
+        conditions.push(eq(conversations.milestoneId, milestoneId));
+      }
+      const [existing] = await ctx.db
+        .select()
+        .from(conversations)
+        .where(and(...conditions))
+        .orderBy(desc(conversations.updatedAt))
+        .limit(1);
+      if (existing) return existing;
+      const [row] = await ctx.db
+        .insert(conversations)
+        .values({
+          userId: ctx.user.id,
+          type: "coaching",
+          mode: "auto",
+          projectId: input.projectId,
+          milestoneId,
+        })
+        .returning();
+      return row!;
+    }),
   reset: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {

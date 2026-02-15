@@ -39,6 +39,10 @@ completed: 2026-02-15
 
 None - followed plan.
 
+## Note
+
+With **getOrCreateProjectThread** (post-08-07), project- and section-level chats are separate conversations. The sidebar "Project threads" list therefore shows distinct threads per project and per section (project name + optional section name), each opening its own conversation.
+
 ---
 *Phase: 08-projects*
 *Completed: 2026-02-15*

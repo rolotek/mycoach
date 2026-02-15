@@ -111,12 +111,14 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               {projectThreads !== undefined && projectThreads.length === 0 && (
-                <li className="px-2 py-1 text-xs text-muted-foreground">
-                  {t("noProjectThreads")}
-                </li>
+                <SidebarMenuItem>
+                  <span className="px-2 py-1 text-xs text-muted-foreground">
+                    {t("noProjectThreads")}
+                  </span>
+                </SidebarMenuItem>
               )}
             </SidebarMenu>
-          </SidebarContent>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="pb-14">

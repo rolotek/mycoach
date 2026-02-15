@@ -47,6 +47,13 @@ None - followed plan.
 
 None.
 
+## Post-completion update (separate conversations per project/section)
+
+So that "Chat about this section" uses a **different conversation** (and message history) from the project-level chat and from other sections:
+
+- **conversation.getOrCreateProjectThread** was added: input `{ projectId, milestoneId?: string | null }`. Finds an existing coaching conversation with that `userId`, `projectId`, and `milestoneId` (or creates one). Project-level thread has `milestoneId` null; section-level has `milestoneId` set.
+- **Chat page (/chat)** now calls `getOrCreateProjectThread` when the URL has `projectId` (with or without `milestoneId`), and `getOrCreateCoaching` only when there is no `projectId`. Result: one thread per project (open chat for project), one thread per section (chat about this section), each with its own messages.
+
 ---
 *Phase: 08-projects*
 *Completed: 2026-02-15*
