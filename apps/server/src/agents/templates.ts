@@ -1,6 +1,4 @@
 import { agents } from "../db/schema";
-import { eq, sql } from "drizzle-orm";
-import type { db } from "../db";
 
 export const STARTER_TEMPLATES = [
   {
@@ -59,12 +57,8 @@ export async function seedStarterAgents(
   db: typeof import("../db").db,
   userId: string
 ): Promise<void> {
-  const [row] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(agents)
-    .where(eq(agents.userId, userId));
-  const count = row?.count ?? 0;
-  if (count > 0) return;
+  // Idempotent: insert each starter if missing (on conflict do nothing).
+  // Ensures the four starters always exist for the user, even after custom agents were added.
   await db
     .insert(agents)
     .values(
@@ -77,5 +71,6 @@ export async function seedStarterAgents(
         icon: t.icon,
         isStarter: true,
       }))
-    );
+    )
+    .onConflictDoNothing({ target: [agents.userId, agents.slug] });
 }

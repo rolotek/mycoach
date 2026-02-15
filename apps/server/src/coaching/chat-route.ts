@@ -1,12 +1,14 @@
 import { Hono } from "hono";
-import { streamText, createAgentUIStreamResponse } from "ai";
+import { streamText, createAgentUIStream, createUIMessageStreamResponse } from "ai";
 import { convertToModelMessages, tool } from "ai";
 import type { UIMessage } from "ai";
+import type { ExecutedDispatchResult } from "../agents/resolve-approved-dispatch";
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "../db";
 import { conversations, userFacts, agents } from "../db/schema";
 import { getModel } from "../llm/providers";
 import { buildChiefOfStaff } from "../agents/chief-of-staff";
+import { resolveApprovedDispatchTools } from "../agents/resolve-approved-dispatch";
 import { buildSystemPrompt } from "./system-prompt";
 import { detectMode, type ConversationMode } from "./mode-detector";
 import {
@@ -17,6 +19,45 @@ import {
 import { retrieveContext } from "../memory/retriever";
 import { extractFacts } from "../memory/fact-extractor";
 import { auth } from "../auth";
+
+/**
+ * Returns a ReadableStream that first emits tool-output-available chunks for each
+ * executed dispatch so the client can show the result card, then forwards the agent stream.
+ */
+function prependToolOutputAvailableChunks(
+  agentStream: ReadableStream<Record<string, unknown>>,
+  executedResults: ExecutedDispatchResult[]
+): ReadableStream<Record<string, unknown>> {
+  const prependChunks = executedResults.map((r) => ({
+    type: "tool-output-available" as const,
+    toolCallId: r.toolCallId,
+    output: r.output,
+    providerExecuted: true,
+  }));
+  let prependIndex = 0;
+  let reader: ReadableStreamDefaultReader<Record<string, unknown>> | null = null;
+  return new ReadableStream({
+    pull(controller) {
+      if (prependIndex < prependChunks.length) {
+        controller.enqueue(prependChunks[prependIndex++] as Record<string, unknown>);
+        return;
+      }
+      if (!reader) {
+        reader = agentStream.getReader();
+      }
+      return reader.read().then((result) => {
+        if (result.done) {
+          controller.close();
+        } else {
+          controller.enqueue(result.value);
+        }
+      });
+    },
+    cancel(reason) {
+      reader?.cancel(reason);
+    },
+  });
+}
 
 const chatApp = new Hono<{
   Variables: {
@@ -94,6 +135,13 @@ chatApp.post("/api/chat", async (c) => {
     .where(eq(agents.userId, user.id));
 
   if (userAgents.length > 0) {
+    const executedResults = await resolveApprovedDispatchTools(
+      messages,
+      userAgents,
+      modelId,
+      user.id,
+      chatId ?? undefined
+    );
     const chiefOfStaff = buildChiefOfStaff({
       agents: userAgents,
       modelId,
@@ -103,10 +151,9 @@ chatApp.post("/api/chat", async (c) => {
       userFactsSection: factsSection,
       mode: effectiveMode,
     });
-    const response = await createAgentUIStreamResponse({
+    const agentStream = await createAgentUIStream({
       agent: chiefOfStaff,
       uiMessages: messages,
-      headers: { "X-Chat-Id": chatId! },
       onFinish: async ({ messages: updatedMessages }) => {
         await db
           .update(conversations)
@@ -127,7 +174,14 @@ chatApp.post("/api/chat", async (c) => {
         );
       },
     });
-    return response;
+    const streamWithToolResults = prependToolOutputAvailableChunks(
+      agentStream as ReadableStream<Record<string, unknown>>,
+      executedResults
+    );
+    return createUIMessageStreamResponse({
+      stream: streamWithToolResults,
+      headers: { "X-Chat-Id": chatId! },
+    });
   }
 
   const systemPrompt = buildSystemPrompt(

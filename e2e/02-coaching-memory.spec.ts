@@ -72,7 +72,7 @@ test('4. Conversation persistence', async ({ page }) => {
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
   await page.reload();
   await expect(page).toHaveURL(chatUrl);
-  await expect(page.getByText('persistence test')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('main').getByText('persistence test')).toBeVisible({ timeout: 10000 });
 });
 
 test('5. Conversation sidebar', async ({ page }) => {
@@ -106,7 +106,7 @@ test('6. Document upload', async ({ page }) => {
     mimeType: 'text/plain',
     buffer: Buffer.from('E2E Phase 2 document upload test.'),
   });
-  await expect(page.getByText('e2e-test.txt')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('e2e-test.txt').first()).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('ready').or(page.getByText('processing'))).toBeVisible({ timeout: 20000 });
 });
 
@@ -134,7 +134,10 @@ test('7. RAG (coach uses documents)', async ({ page }) => {
   if (hasExact) {
     await expect(page.getByText(secret)).toBeVisible();
   } else {
-    await expect(page.locator('div.bg-neutral-100').last()).toContainText(/.+/, { timeout: 20000 });
+    // Target the assistant message bubble (parent of the "Coach" label); more reliable than div.bg-neutral-100 alone
+    await expect(
+      page.getByText('Coach').locator('..').locator('..').last()
+    ).toContainText(/.+/, { timeout: 20000 });
   }
 });
 
@@ -164,12 +167,18 @@ test('8. Memory / facts', async ({ page }) => {
     throw new Error('Memory page: neither "No facts" nor any fact card appeared within 40s');
   }
   await editBtn.click();
+  const editedText = `Edited E2E fact ${Date.now()} - updated.`;
   const textarea = page.locator('textarea').first();
-  await textarea.fill('Edited E2E fact - updated.');
+  await textarea.fill(editedText);
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('Edited E2E fact - updated.')).toBeVisible({ timeout: 5000 });
-  await page.locator('div:has-text("Edited E2E fact - updated.")').getByRole('button', { name: 'Delete' }).click();
-  await expect(page.getByText('Edited E2E fact - updated.')).not.toBeVisible({ timeout: 5000 });
+  await expect(page.getByText(editedText)).toBeVisible({ timeout: 5000 });
+  // Scope to the fact card that contains the edited text, then Delete within it
+  await page
+    .locator('.rounded-lg.border.border-neutral-200')
+    .filter({ hasText: editedText })
+    .getByRole('button', { name: 'Delete' })
+    .click();
+  await expect(page.getByText(editedText)).not.toBeVisible({ timeout: 5000 });
 });
 
 test('9. Dashboard navigation', async ({ page }) => {

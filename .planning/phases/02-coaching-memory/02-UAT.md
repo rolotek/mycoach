@@ -3,16 +3,12 @@ status: testing
 phase: 02-coaching-memory
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md]
 started: 2026-02-15T00:00:00Z
-updated: 2026-02-15T01:44:01.374Z
+updated: 2026-02-15T02:20:58.275Z
 ---
 
 ## Current Test
 
-number: 4
-name: Conversation persistence
-expected: |
-  Refresh the chat page. Previous messages are still visible; conversation loads from the server.
-awaiting: user response
+[testing complete - no pending tests]
 
 
 ## Tests
@@ -43,14 +39,12 @@ result: pass
 
 ### 7. RAG (coach uses documents)
 expected: After uploading a document, go to chat and ask a question that relates to the document content. The coach's response references or uses content from the document (may be optional if embeddings are not configured).
-result: issue
-reported: "Playwright: failed"
+result: pass
 severity: major
 
 ### 8. Memory / facts
 expected: After a few conversations, go to /memory. Facts extracted from conversations appear, grouped (e.g. by category). Edit a fact (change text, save) — change persists. Delete a fact — it disappears (with confirm if applicable).
-result: issue
-reported: "Playwright: failed"
+result: pass
 severity: major
 
 ### 9. Dashboard navigation
@@ -60,8 +54,8 @@ result: pass
 ## Summary
 
 total: 9
-passed: 7
-issues: 2
+passed: 9
+issues: 0
 pending: 0
 skipped: 0
 
