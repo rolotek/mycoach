@@ -219,7 +219,12 @@
     "noMilestones": "No milestones.",
     "noMilestone": "No milestone",
     "milestoneOptional": "Milestone (optional)",
-    "viewTaskThread": "View task thread"
+    "viewTaskThread": "View task thread",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinned": "Pinned",
+    "showArchived": "Show completed & archived",
+    "hideArchived": "Hide completed & archived"
   },
   "sidebar": {
     "navigation": "Navigation",
