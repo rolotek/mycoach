@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, PanelLeftClose, PanelLeft } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function formatDate(d: Date | string): string {
@@ -19,132 +21,151 @@ function formatDate(d: Date | string): string {
   return date.toLocaleDateString();
 }
 
-function ConversationList({
-  activeChatId,
-  onItemClick,
-}: {
-  activeChatId: string;
-  onItemClick?: () => void;
-}) {
-  const router = useRouter();
-  const { data: conversations, isLoading } = trpc.conversation.list.useQuery();
-  const utils = trpc.useUtils();
-  const deleteMut = trpc.conversation.delete.useMutation({
-    onSuccess: () => {
-      utils.conversation.list.invalidate();
-      if (activeChatId) router.push("/chat");
-    },
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 flex-col gap-2 p-2">
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-9 w-full" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-1 overflow-y-auto p-2">
-      {(conversations ?? []).map((c) => (
-        <div
-          key={c.id}
-          className={`group flex items-center justify-between gap-1 rounded-lg px-2 py-2 ${
-            activeChatId === c.id ? "bg-accent" : "hover:bg-accent/50"
-          }`}
-        >
-          <Link
-            href={`/chat/${c.id}`}
-            onClick={onItemClick}
-            className="min-w-0 flex-1 truncate text-sm text-foreground"
-          >
-            <span className="block truncate">{c.title || "New conversation"}</span>
-            <span className="text-xs text-muted-foreground">{formatDate(c.updatedAt)}</span>
-          </Link>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-            onClick={() => {
-              if (window.confirm("Delete this conversation?")) {
-                deleteMut.mutate({ id: c.id });
-              }
-            }}
-            aria-label="Delete"
-          >
-            ×
-          </Button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function ConversationSidebar({
   activeChatId,
   open,
   onOpenChange,
-  collapsed,
-  onCollapsedChange,
 }: {
   activeChatId: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  collapsed?: boolean;
-  onCollapsedChange?: (collapsed: boolean) => void;
 }) {
+  const router = useRouter();
+  const [coachingId, setCoachingId] = useState<string | null>(null);
   const [internalOpen, setInternalOpen] = useState(false);
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
-  const isCollapsed = collapsed ?? internalCollapsed;
-  const setCollapsed = onCollapsedChange ?? setInternalCollapsed;
+
+  const getOrCreate = trpc.conversation.getOrCreateCoaching.useMutation({
+    onSuccess: (data) => setCoachingId(data.id),
+  });
+  const utils = trpc.useUtils();
+  const resetMut = trpc.conversation.reset.useMutation({
+    onSuccess: () => {
+      utils.conversation.get.invalidate();
+      utils.conversation.listTaskThreads.invalidate();
+      if (activeChatId === coachingId) router.replace(`/chat/${coachingId}`);
+    },
+  });
+  const deleteMut = trpc.conversation.delete.useMutation({
+    onSuccess: () => {
+      utils.conversation.listTaskThreads.invalidate();
+      if (activeChatId) router.push("/chat");
+    },
+  });
+
+  const { data: taskThreads, isLoading: tasksLoading } =
+    trpc.conversation.listTaskThreads.useQuery(
+      { parentId: coachingId! },
+      { enabled: !!coachingId }
+    );
+
+  useEffect(() => {
+    if (coachingId == null && !getOrCreate.isPending) getOrCreate.mutate();
+  }, [coachingId, getOrCreate.isPending]);
+
+  const handleReset = () => {
+    if (!coachingId) return;
+    if (!window.confirm("Reset coaching conversation? Your memory and facts will be preserved.")) return;
+    resetMut.mutate({ id: coachingId });
+  };
 
   const content = (
     <>
-      <Button className="w-full" size="sm" asChild>
-        <Link href="/chat">
-          <Plus className="h-4 w-4" />
-          New Chat
-        </Link>
-      </Button>
-      <ConversationList
-        activeChatId={activeChatId}
-        onItemClick={() => setOpen(false)}
-      />
+      {/* Pinned coaching thread */}
+      <div className="flex flex-col gap-1 p-2">
+        {coachingId ? (
+          <>
+            <div
+              className={`flex items-center justify-between gap-1 rounded-lg px-2 py-2 ${
+                activeChatId === coachingId ? "bg-accent" : "hover:bg-accent/50"
+              }`}
+            >
+              <Link
+                href={`/chat/${coachingId}`}
+                onClick={() => setOpen(false)}
+                className="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
+              >
+                Coaching
+              </Link>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={handleReset}
+                aria-label="Reset coaching"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <Skeleton className="h-10 w-full" />
+        )}
+      </div>
+      <Separator />
+      {/* Recent tasks */}
+      <div className="flex flex-1 flex-col overflow-hidden p-2">
+        <span className="mb-1 px-2 text-xs font-medium text-muted-foreground">
+          Recent Tasks
+        </span>
+        {!coachingId || tasksLoading ? (
+          <Skeleton className="h-9 w-full" />
+        ) : (taskThreads?.length ?? 0) === 0 ? (
+          <p className="px-2 text-sm text-muted-foreground">No tasks yet</p>
+        ) : (
+          <ScrollArea className="flex-1">
+            <div className="flex flex-col gap-0.5">
+              {(taskThreads ?? []).map((t) => (
+                <div
+                  key={t.id}
+                  className={`group flex items-center justify-between gap-1 rounded-lg px-2 py-2 ${
+                    activeChatId === t.id ? "bg-accent" : "hover:bg-accent/50"
+                  }`}
+                >
+                  <Link
+                    href={`/chat/${t.id}`}
+                    onClick={() => setOpen(false)}
+                    className="min-w-0 flex-1 truncate text-sm text-foreground"
+                  >
+                    <span className="block truncate">{t.title || "Task"}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(t.updatedAt)}
+                    </span>
+                  </Link>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      if (window.confirm("Delete this task thread?")) {
+                        deleteMut.mutate({ id: t.id });
+                      }
+                    }}
+                    aria-label="Delete task thread"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
     </>
   );
 
   return (
     <>
-      {/* Desktop: collapsible panel */}
-      <div className="hidden shrink-0 border-r border-border bg-card md:block">
-        <div className="flex h-full w-64 flex-col p-2">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">Conversations</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCollapsed(!isCollapsed)}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {isCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-            </Button>
-          </div>
-          {!isCollapsed && content}
-        </div>
+      <div className="hidden h-full shrink-0 border-r border-border bg-card md:flex md:w-64 md:flex-col">
+        {content}
       </div>
-      {/* Mobile: Sheet (trigger is in chat page header) */}
       <Sheet open={isOpen} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="flex w-64 flex-col p-0">
           <SheetTitle className="sr-only">Conversations</SheetTitle>
-          <div className="flex h-full flex-col p-2">
-            {content}
-          </div>
+          <div className="flex h-full flex-col">{content}</div>
         </SheetContent>
       </Sheet>
     </>

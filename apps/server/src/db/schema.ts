@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   pgTable,
   text,
@@ -135,11 +136,18 @@ export const conversations = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     title: text("title"),
     mode: text("mode").default("auto").notNull(),
+    type: text("type").default("coaching").notNull(),
+    parentId: uuid("parent_id").references((): AnyPgColumn => conversations.id, {
+      onDelete: "cascade",
+    }),
     messages: jsonb("messages").default([]),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => [index("conversations_userId_idx").on(table.userId)]
+  (table) => [
+    index("conversations_userId_idx").on(table.userId),
+    index("conversations_parentId_idx").on(table.parentId),
+  ]
 );
 
 export const memories = pgTable(
@@ -306,11 +314,17 @@ export const agentVersions = pgTable(
   ]
 );
 
-export const conversationRelations = relations(conversations, ({ one }) => ({
+export const conversationRelations = relations(conversations, ({ one, many }) => ({
   user: one(user, {
     fields: [conversations.userId],
     references: [user.id],
   }),
+  parent: one(conversations, {
+    fields: [conversations.parentId],
+    references: [conversations.id],
+    relationName: "conversationParent",
+  }),
+  children: many(conversations, { relationName: "conversationParent" }),
 }));
 
 export const memoryRelations = relations(memories, ({ one }) => ({

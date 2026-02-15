@@ -1,12 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import Link from "next/link";
+import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+
+export function AgentSummaryCard({
+  agentName,
+  task,
+  taskThreadId,
+}: {
+  agentName: string;
+  task: string;
+  taskThreadId?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{agentName}</Badge>
+          <span className="text-xs text-muted-foreground">completed</span>
+        </div>
+        <p className="mt-1 truncate text-sm text-muted-foreground">{task}</p>
+      </div>
+      {taskThreadId && (
+        <Link
+          href={`/chat/${taskThreadId}`}
+          className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          View result
+          <ExternalLink className="h-3 w-3" />
+        </Link>
+      )}
+    </div>
+  );
+}
 
 export function FeedbackButtons({
   executionId,

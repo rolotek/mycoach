@@ -54,6 +54,7 @@ node scripts/playwright-from-uat.js --phase 01
 | 01-foundation | `e2e/01-foundation.spec.ts` | Auth, settings, isolation, OAuth buttons |
 | 02-coaching-memory | `e2e/02-coaching-memory.spec.ts` | Chat, streaming, mode toggle, sidebar, documents, memory, dashboard. Requires TEST_USER_EMAIL/PASSWORD; LLM (e.g. Ollama) for chat tests. |
 | 03-agent-system | `e2e/03-agent-system.spec.ts` | Agents page CRUD, dashboard link, chat approval/deny and agent result cards. Requires TEST_USER_EMAIL/PASSWORD; LLM for chat routing and execution. |
+| 05-ui-polish-styling | `e2e/05-ui-polish.spec.ts` | UI polish (login, sidebar, dashboard, theme, chat, agents, memory, documents, settings, dark mode) and conversation model (coaching redirect, sidebar Coaching/Recent Tasks, task thread read-only, reset confirm). Requires TEST_USER_EMAIL/PASSWORD. Tests 12–15 require coaching/task-thread backend (05-06–05-09). |
 
 ## Adding Playwright for a new phase
 

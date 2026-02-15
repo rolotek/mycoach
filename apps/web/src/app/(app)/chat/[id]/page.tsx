@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import type { UIMessage } from "ai";
+import Link from "next/link";
 import { Menu } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useCoachingChat } from "@/hooks/use-coaching-chat";
@@ -25,6 +26,7 @@ export default function ChatIdPage() {
       { id: chatId },
       { enabled: !!chatId }
     );
+  const isTaskThread = conv?.type === "task";
 
   const {
     messages,
@@ -85,21 +87,33 @@ export default function ChatIdPage() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-medium text-foreground">Coach</h1>
+            {isTaskThread && (
+              <Link
+                href="/chat"
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Back to coaching
+              </Link>
+            )}
+            <h1 className="text-lg font-medium text-foreground">
+              {isTaskThread ? (conv?.title ?? "Task") : "Coaching"}
+            </h1>
           </div>
-          <ModeToggle mode={mode} onChange={setMode} />
+          {!isTaskThread && <ModeToggle mode={mode} onChange={setMode} />}
         </header>
         <MessageList
           messages={messages as MessageListMessage[]}
           status={status}
           addToolApprovalResponse={addToolApprovalResponse}
         />
-        <ChatInput
-          input={input}
-          handleInputChange={(e) => setInput(e.target.value)}
-          handleSubmit={handleSubmit}
-          status={status}
-        />
+        {!isTaskThread && (
+          <ChatInput
+            input={input}
+            handleInputChange={(e) => setInput(e.target.value)}
+            handleSubmit={handleSubmit}
+            status={status}
+          />
+        )}
       </div>
     </div>
   );

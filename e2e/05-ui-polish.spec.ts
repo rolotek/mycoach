@@ -130,3 +130,48 @@ test('11. Dark mode toggle adds dark class to html', async ({ page }) => {
   await darkItem.click();
   await expect(html).toHaveClass(/dark/, { timeout: 5000 });
 });
+
+test('12. Chat redirects to coaching thread', async ({ page }) => {
+  await login(page);
+  await page.goto(`${baseURL}/chat`);
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  const firstUrl = page.url();
+  await page.goto(`${baseURL}/chat`);
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await expect(page.url()).toBe(firstUrl);
+});
+
+test('13. Sidebar shows Coaching and Recent Tasks', async ({ page }) => {
+  await login(page);
+  await page.goto(`${baseURL}/chat`);
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await expect(page.getByRole('link', { name: 'Coaching' }).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('button', { name: 'Reset coaching' })).toBeVisible();
+  await expect(page.getByText('Recent Tasks')).toBeVisible();
+  await expect(page.getByText('No tasks yet')).toBeVisible({ timeout: 5000 });
+});
+
+test('14. Task thread view is read-only with Back to coaching', async ({ page }) => {
+  await login(page);
+  await page.goto(`${baseURL}/chat`);
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  const chatLinks = page.locator('a[href^="/chat/"]');
+  const n = await chatLinks.count();
+  if (n < 2) {
+    test.skip();
+    return;
+  }
+  await chatLinks.nth(1).click();
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 5000 });
+  await expect(page.getByRole('link', { name: 'Back to coaching' })).toBeVisible({ timeout: 5000 });
+  await expect(page.getByPlaceholder('Message your coach...')).not.toBeVisible();
+});
+
+test('15. Reset button shows confirmation', async ({ page }) => {
+  await login(page);
+  await page.goto(`${baseURL}/chat`);
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  page.on('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Reset coaching' }).click();
+  await expect(page.getByRole('link', { name: 'Coaching' }).first()).toBeVisible({ timeout: 5000 });
+});

@@ -1,7 +1,15 @@
-import { ToolLoopAgent, stepCountIs } from "ai";
+import { tool, ToolLoopAgent, stepCountIs } from "ai";
+import { z } from "zod";
 import { getModel } from "../llm/providers";
 import { buildAgentTools } from "./agent-tools";
 import type { AgentRow } from "./agent-tools";
+
+/** Tool some models use for direct coaching replies; we execute it so the message is shown instead of raw JSON. */
+const coachingTool = tool({
+  description: "Use this to send a direct coaching reply to the user (reflective questions, advice, acknowledgment).",
+  inputSchema: z.object({ message: z.string().describe("Your reply to the user") }),
+  execute: async ({ message }: { message: string }) => message,
+});
 
 const CHIEF_OF_STAFF_SYSTEM_PROMPT = `You are an executive coach and chief of staff. You have two capabilities:
 
@@ -29,12 +37,13 @@ export function buildChiefOfStaff(params: {
   userFactsSection: string;
   mode: string;
 }) {
-  const tools = buildAgentTools(
+  const dispatchTools = buildAgentTools(
     params.agents,
     params.modelId,
     params.userId,
     params.conversationId
   );
+  const tools = { coaching: coachingTool, ...dispatchTools };
 
   const modeInstructions =
     params.mode === "coaching"

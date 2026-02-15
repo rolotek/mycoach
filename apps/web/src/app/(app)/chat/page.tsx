@@ -4,22 +4,22 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 
-export default function NewChatPage() {
+export default function ChatPage() {
   const router = useRouter();
-  const create = trpc.conversation.create.useMutation({
+  const getOrCreate = trpc.conversation.getOrCreateCoaching.useMutation({
     onSuccess: (data) => {
       router.replace(`/chat/${data.id}`);
     },
   });
 
   useEffect(() => {
-    create.mutate({});
+    getOrCreate.mutate();
   }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <p className="text-muted-foreground">
-        {create.isPending ? "Creating conversation..." : "Redirecting..."}
+        {getOrCreate.isPending ? "Loading coaching session..." : "Redirecting..."}
       </p>
     </div>
   );

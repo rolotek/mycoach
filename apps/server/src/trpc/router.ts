@@ -97,6 +97,8 @@ const conversationRouter = t.router({
         id: conversations.id,
         title: conversations.title,
         mode: conversations.mode,
+        type: conversations.type,
+        parentId: conversations.parentId,
         createdAt: conversations.createdAt,
         updatedAt: conversations.updatedAt,
       })
@@ -123,14 +125,92 @@ const conversationRouter = t.router({
     .input(
       z.object({
         mode: z.enum(["auto", "coaching", "task"]).default("auto"),
+        type: z.enum(["coaching", "task"]).default("coaching").optional(),
+        parentId: z.string().uuid().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const [row] = await ctx.db
         .insert(conversations)
-        .values({ userId: ctx.user.id, mode: input.mode })
+        .values({
+          userId: ctx.user.id,
+          mode: input.mode,
+          type: input.type ?? "coaching",
+          parentId: input.parentId ?? null,
+        })
         .returning({ id: conversations.id, mode: conversations.mode });
       return row!;
+    }),
+  getOrCreateCoaching: protectedProcedure.mutation(async ({ ctx }) => {
+    const [existing] = await ctx.db
+      .select()
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.userId, ctx.user.id),
+          eq(conversations.type, "coaching")
+        )
+      )
+      .orderBy(desc(conversations.updatedAt))
+      .limit(1);
+    if (existing) return existing;
+    const [row] = await ctx.db
+      .insert(conversations)
+      .values({
+        userId: ctx.user.id,
+        type: "coaching",
+        mode: "auto",
+      })
+      .returning();
+    return row!;
+  }),
+  reset: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [conv] = await ctx.db
+        .select()
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.id, input.id),
+            eq(conversations.userId, ctx.user.id),
+            eq(conversations.type, "coaching")
+          )
+        );
+      if (!conv)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Coaching conversation not found" });
+      await ctx.db
+        .delete(memories)
+        .where(eq(memories.conversationId, input.id));
+      await ctx.db
+        .update(conversations)
+        .set({
+          messages: [],
+          title: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(conversations.id, input.id));
+      return { success: true };
+    }),
+  listTaskThreads: protectedProcedure
+    .input(z.object({ parentId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db
+        .select({
+          id: conversations.id,
+          title: conversations.title,
+          createdAt: conversations.createdAt,
+          updatedAt: conversations.updatedAt,
+        })
+        .from(conversations)
+        .where(
+          and(
+            eq(conversations.userId, ctx.user.id),
+            eq(conversations.parentId, input.parentId),
+            eq(conversations.type, "task")
+          )
+        )
+        .orderBy(desc(conversations.createdAt));
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))

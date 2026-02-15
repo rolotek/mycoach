@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { agentExecutions } from "../db/schema";
+import { agentExecutions, conversations } from "../db/schema";
 import { getModel } from "../llm/providers";
 
 export type SpecialistAgent = {
@@ -22,6 +23,7 @@ export async function executeSpecialistAgent(
   result: string;
   executionId: string;
   agentId: string;
+  taskThreadId: string;
 }> {
   const [execution] = await db
     .insert(agentExecutions)
@@ -54,11 +56,37 @@ export async function executeSpecialistAgent(
       })
       .where(eq(agentExecutions.id, execution.id));
 
+    const [taskThread] = await db
+      .insert(conversations)
+      .values({
+        userId,
+        type: "task",
+        parentId: conversationId ?? null,
+        title: `${agent.name}: ${task.slice(0, 80)}${task.length > 80 ? "…" : ""}`,
+        mode: "task",
+        messages: [
+          {
+            id: randomUUID(),
+            role: "user",
+            parts: [{ type: "text", text: `Task: ${task}` }],
+          },
+          {
+            id: randomUUID(),
+            role: "assistant",
+            parts: [{ type: "text", text: result.text }],
+          },
+        ],
+      })
+      .returning({ id: conversations.id });
+
+    const taskThreadId = taskThread?.id ?? "";
+
     return {
       agentName: agent.name,
       result: result.text,
       executionId: execution.id,
       agentId: agent.id,
+      taskThreadId,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

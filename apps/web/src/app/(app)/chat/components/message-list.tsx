@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { AgentApprovalCard } from "./agent-approval";
-import { AgentResultCard, AgentDeniedCard } from "./agent-result";
+import { AgentResultCard, AgentDeniedCard, AgentSummaryCard } from "./agent-result";
 
 export type MessageListMessage = {
   id?: string;
@@ -19,6 +19,7 @@ export type MessageListMessage = {
       result?: string;
       executionId?: string;
       agentId?: string;
+      taskThreadId?: string;
     };
   }>;
 };
@@ -32,6 +33,20 @@ function extractAgentName(toolName: string): string {
     .split(" ")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
+}
+
+/** If the model output raw coaching-tool JSON, show the inner message instead. */
+function normalizeCoachText(raw: string): string {
+  const t = raw.trim();
+  if (!t.startsWith("{")) return raw;
+  try {
+    const parsed = JSON.parse(t) as { name?: string; parameters?: { message?: string } };
+    if (parsed?.name === "coaching" && typeof parsed?.parameters?.message === "string")
+      return parsed.parameters.message;
+  } catch {
+    // not JSON or wrong shape
+  }
+  return raw;
 }
 
 export function MessageList({
@@ -66,7 +81,8 @@ export function MessageList({
       {messages.map((m) => {
         const isUser = m.role === "user";
         const textParts = m.parts?.filter((p) => p.type === "text") ?? [];
-        const text = textParts.map((p) => (p as { text?: string }).text).join("") ?? "";
+        const rawText = textParts.map((p) => (p as { text?: string }).text).join("") ?? "";
+        const text = isUser ? rawText : normalizeCoachText(rawText);
         const dispatchParts = m.parts?.filter(
           (p) => typeof p.type === "string" && p.type.startsWith("tool-dispatch_")
         ) ?? [];
@@ -89,6 +105,7 @@ export function MessageList({
                       result?: string;
                       executionId?: string;
                       agentId?: string;
+                      taskThreadId?: string;
                     };
                   };
                   const toolName = part.type.startsWith("tool-")
@@ -119,6 +136,17 @@ export function MessageList({
                   }
                   if (part.state === "output-available" && part.output) {
                     const out = part.output;
+                    if (out.taskThreadId) {
+                      return (
+                        <div key={`${m.id}-${i}`} className="max-w-[85%]">
+                          <AgentSummaryCard
+                            agentName={out.agentName ?? agentName}
+                            task={part.input?.task ?? "Agent task"}
+                            taskThreadId={out.taskThreadId}
+                          />
+                        </div>
+                      );
+                    }
                     const result =
                       typeof out.result === "string"
                         ? out.result

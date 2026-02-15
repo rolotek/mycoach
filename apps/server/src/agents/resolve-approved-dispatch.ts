@@ -9,6 +9,7 @@ export type ExecutedDispatchResult = {
     result: string;
     executionId: string;
     agentId: string;
+    taskThreadId: string;
   };
 };
 
@@ -53,7 +54,7 @@ export async function resolveApprovedDispatchTools(
       const task = p.input?.task ?? "";
       const context = p.input?.context;
       try {
-        const { agentName, result, executionId, agentId } =
+        const { agentName, result, executionId, agentId, taskThreadId } =
           await executeSpecialistAgent(
             {
               id: agent.id,
@@ -66,7 +67,7 @@ export async function resolveApprovedDispatchTools(
             userId,
             conversationId
           );
-        const output = { agentName, result, executionId, agentId };
+        const output = { agentName, result, executionId, agentId, taskThreadId };
         Object.assign(p, {
           state: "output-available",
           output,
