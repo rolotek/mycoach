@@ -3,10 +3,11 @@ import { streamText, createAgentUIStream, createUIMessageStreamResponse } from "
 import { convertToModelMessages, tool } from "ai";
 import type { UIMessage } from "ai";
 import type { ExecutedDispatchResult } from "../agents/resolve-approved-dispatch";
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, isNull, gte, sql } from "drizzle-orm";
 import { db } from "../db";
-import { conversations, userFacts, agents } from "../db/schema";
-import { getModel } from "../llm/providers";
+import { conversations, userFacts, agents, tokenUsage, userSettings } from "../db/schema";
+import { resolveUserModel, ApiKeyRequiredError } from "../llm/providers";
+import { calculateCostCents } from "../llm/pricing";
 import { buildChiefOfStaff } from "../agents/chief-of-staff";
 import { resolveApprovedDispatchTools } from "../agents/resolve-approved-dispatch";
 import { buildSystemPrompt } from "./system-prompt";
@@ -19,6 +20,33 @@ import {
 import { retrieveContext } from "../memory/retriever";
 import { extractFacts } from "../memory/fact-extractor";
 import { auth } from "../auth";
+
+/**
+ * Extract a user-facing error message from LLM/API errors (e.g. APICallError).
+ * Surfaces provider messages like "model 'llama3.1' not found" instead of generic stack traces.
+ */
+function extractUserFacingErrorMessage(error: unknown): string {
+  const err = error as {
+    message?: string;
+    data?: { error?: { message?: string } };
+    responseBody?: string;
+  };
+  if (err?.data?.error?.message && typeof err.data.error.message === "string") {
+    return err.data.error.message;
+  }
+  if (typeof err?.responseBody === "string") {
+    try {
+      const parsed = JSON.parse(err.responseBody) as { error?: { message?: string } };
+      if (parsed?.error?.message) return parsed.error.message;
+    } catch {
+      // ignore parse errors
+    }
+  }
+  if (typeof err?.message === "string" && err.message) {
+    return err.message;
+  }
+  return "Something went wrong while calling the model. Please try again or check your Settings.";
+}
 
 /**
  * Returns a ReadableStream that first emits tool-output-available chunks for each
@@ -59,6 +87,41 @@ function prependToolOutputAvailableChunks(
   });
 }
 
+/**
+ * Wrap a UI message stream so that if the source stream errors, we push an error chunk
+ * (type: 'error', errorText) before closing, so the client can display it.
+ */
+function wrapStreamWithErrorChunk(
+  source: ReadableStream<Record<string, unknown>>,
+  onError: (error: unknown) => string
+): ReadableStream<Record<string, unknown>> {
+  return new ReadableStream({
+    async start(controller) {
+      const reader = source.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(value);
+        }
+      } catch (err) {
+        try {
+          controller.enqueue({
+            type: "error",
+            errorText: onError(err),
+          } as Record<string, unknown>);
+        } catch {
+          // ignore enqueue after close
+        }
+        controller.close();
+      }
+    },
+  });
+}
+
 const chatApp = new Hono<{
   Variables: {
     user: (typeof auth)["$Infer"]["Session"]["user"] | null;
@@ -66,9 +129,71 @@ const chatApp = new Hono<{
   };
 }>();
 
+async function checkBudget(userId: string): Promise<{
+  allowed: boolean;
+  remaining: number;
+}> {
+  const [settings] = await db
+    .select()
+    .from(userSettings)
+    .where(eq(userSettings.userId, userId));
+  if (!settings?.monthlyBudgetCents) return { allowed: true, remaining: Infinity };
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const [result] = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(${tokenUsage.estimatedCostCents}), 0)`,
+    })
+    .from(tokenUsage)
+    .where(
+      and(
+        eq(tokenUsage.userId, userId),
+        gte(tokenUsage.createdAt, startOfMonth)
+      )
+    );
+  const spent = result?.total ?? 0;
+  const remaining = settings.monthlyBudgetCents - spent;
+  return { allowed: remaining > 0, remaining };
+}
+
+async function trackUsage(params: {
+  userId: string;
+  conversationId: string | null;
+  provider: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}) {
+  await db.insert(tokenUsage).values({
+    userId: params.userId,
+    conversationId: params.conversationId,
+    provider: params.provider,
+    model: params.model,
+    inputTokens: params.inputTokens,
+    outputTokens: params.outputTokens,
+    estimatedCostCents: calculateCostCents(
+      params.model,
+      params.inputTokens,
+      params.outputTokens
+    ),
+  });
+}
+
 chatApp.post("/api/chat", async (c) => {
   const user = c.get("user");
   if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+  const budgetCheck = await checkBudget(user.id);
+  if (!budgetCheck.allowed) {
+    return c.json(
+      {
+        error:
+          "Monthly budget exceeded. Update your budget in Settings to continue.",
+      },
+      429
+    );
+  }
 
   const body = await c.req.json<{
     messages: UIMessage[];
@@ -104,9 +229,15 @@ chatApp.post("/api/chat", async (c) => {
     .orderBy(desc(userFacts.confidence))
     .limit(20);
 
-  const modelId =
-    process.env.COACH_CHAT_MODEL ??
-    `ollama:${process.env.OLLAMA_MODEL || "llama3.1"}`;
+  let resolved: Awaited<ReturnType<typeof resolveUserModel>>;
+  try {
+    resolved = await resolveUserModel(user.id);
+  } catch (err) {
+    if (err instanceof ApiKeyRequiredError) {
+      return c.json({ error: err.message }, 400);
+    }
+    throw err;
+  }
 
   const contextSection =
     relevantContext.length > 0
@@ -135,16 +266,20 @@ chatApp.post("/api/chat", async (c) => {
     .where(and(eq(agents.userId, user.id), isNull(agents.archivedAt)));
 
   if (userAgents.length > 0) {
+    const agentPreferredModels: Record<string, string | null> = {};
+    for (const a of userAgents) {
+      agentPreferredModels[a.id] = a.preferredModel ?? null;
+    }
     const executedResults = await resolveApprovedDispatchTools(
       messages,
       userAgents,
-      modelId,
       user.id,
       chatId ?? undefined
     );
     const chiefOfStaff = buildChiefOfStaff({
       agents: userAgents,
-      modelId,
+      model: resolved.model,
+      agentPreferredModels,
       userId: user.id,
       conversationId: chatId ?? undefined,
       ragContext: contextSection,
@@ -178,8 +313,12 @@ chatApp.post("/api/chat", async (c) => {
       agentStream as ReadableStream<Record<string, unknown>>,
       executedResults
     );
+    const streamWithErrorHandling = wrapStreamWithErrorChunk(
+      streamWithToolResults,
+      extractUserFacingErrorMessage
+    );
     return createUIMessageStreamResponse({
-      stream: streamWithToolResults,
+      stream: streamWithErrorHandling,
       headers: { "X-Chat-Id": chatId! },
     });
   }
@@ -217,15 +356,26 @@ chatApp.post("/api/chat", async (c) => {
     tools: effectiveMode === "task" ? taskTools.tools : undefined,
   });
   const result = streamText({
-    model: getModel(modelId),
+    model: resolved.model,
     system: systemPrompt,
     messages: modelMessages,
     ...taskTools,
+    onFinish: async ({ totalUsage }) => {
+      trackUsage({
+        userId: user.id,
+        conversationId: chatId ?? null,
+        provider: resolved.provider,
+        model: resolved.modelName,
+        inputTokens: totalUsage?.inputTokens ?? 0,
+        outputTokens: totalUsage?.outputTokens ?? 0,
+      }).catch((err) => console.error("Usage tracking failed:", err));
+    },
   });
 
   return result.toUIMessageStreamResponse({
     sendReasoning: false,
     headers: { "X-Chat-Id": chatId },
+    onError: extractUserFacingErrorMessage,
     onFinish: async ({ messages: updatedMessages }) => {
       await db
         .update(conversations)

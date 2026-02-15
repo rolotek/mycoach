@@ -34,6 +34,8 @@ export default function ChatIdPage() {
     sendMessage,
     setMessages,
     addToolApprovalResponse,
+    error: chatError,
+    clearError,
   } = useCoachingChat(chatId, mode);
 
   useEffect(() => {
@@ -101,6 +103,31 @@ export default function ChatIdPage() {
           </div>
           {!isTaskThread && <ModeToggle mode={mode} onChange={setMode} />}
         </header>
+        {chatError && (
+          <div
+            role="alert"
+            className="mx-4 mt-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive"
+          >
+            {(() => {
+              try {
+                const parsed = JSON.parse(chatError.message) as { error?: string };
+                if (parsed?.error) return parsed.error;
+              } catch {
+                // not JSON, use message as-is
+              }
+              return chatError.message;
+            })()}
+            {typeof clearError === "function" && (
+              <button
+                type="button"
+                onClick={() => clearError()}
+                className="ml-2 underline focus:outline-none"
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
+        )}
         <MessageList
           messages={messages as MessageListMessage[]}
           status={status}

@@ -1,6 +1,6 @@
+import type { LanguageModel } from "ai";
 import { tool, ToolLoopAgent, stepCountIs } from "ai";
 import { z } from "zod";
-import { getModel } from "../llm/providers";
 import { buildAgentTools } from "./agent-tools";
 import type { AgentRow } from "./agent-tools";
 
@@ -30,7 +30,8 @@ When the user denies a delegation, acknowledge it and either handle the task dir
 
 export function buildChiefOfStaff(params: {
   agents: AgentRow[];
-  modelId: string;
+  model: LanguageModel;
+  agentPreferredModels: Record<string, string | null>;
   userId: string;
   conversationId: string | undefined;
   ragContext: string;
@@ -39,9 +40,9 @@ export function buildChiefOfStaff(params: {
 }) {
   const dispatchTools = buildAgentTools(
     params.agents,
-    params.modelId,
     params.userId,
-    params.conversationId
+    params.conversationId,
+    params.agentPreferredModels
   );
   const tools = { coaching: coachingTool, ...dispatchTools };
 
@@ -68,7 +69,7 @@ ${params.ragContext}
 - For task/deliverable requests, use the dispatch tools. For coaching, respond directly.`;
 
   return new ToolLoopAgent({
-    model: getModel(params.modelId),
+    model: params.model,
     instructions: fullSystemPrompt,
     tools,
     stopWhen: stepCountIs(5),

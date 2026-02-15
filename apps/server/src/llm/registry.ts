@@ -1,8 +1,10 @@
 import { createProviderRegistry } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const openai = createOpenAI();
+const google = createGoogleGenerativeAI();
 
 // Ollama's OpenAI-compatible API is at /v1 (chat/completions). Use .chat() so we hit /chat/completions
 // instead of /responses; the Responses API uses item_reference in input, which Ollama does not support.
@@ -23,5 +25,6 @@ const ollama = {
 export const registry = createProviderRegistry({
   anthropic,
   openai,
+  google,
   ollama,
 });

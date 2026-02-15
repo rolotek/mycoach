@@ -9,6 +9,7 @@ export type AgentRow = {
   slug: string;
   description: string;
   systemPrompt: string;
+  preferredModel?: string | null;
 };
 
 const taskSchema = z.object({
@@ -21,9 +22,9 @@ const taskSchema = z.object({
 
 export function buildAgentTools(
   agents: AgentRow[],
-  modelId: string,
   userId: string,
-  conversationId: string | undefined
+  conversationId: string | undefined,
+  agentPreferredModels?: Record<string, string | null>
 ): ToolSet {
   const tools: ToolSet = {};
   for (const agent of agents) {
@@ -36,9 +37,9 @@ export function buildAgentTools(
           { id: agent.id, name: agent.name, systemPrompt: agent.systemPrompt },
           task,
           context,
-          modelId,
           userId,
-          conversationId
+          conversationId,
+          agentPreferredModels?.[agent.id] ?? agent.preferredModel ?? null
         ),
     }) as ToolSet[string];
   }

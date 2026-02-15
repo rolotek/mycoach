@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-14)
 
 **Core value:** A single AI that knows your world deeply enough to help you think through anything AND execute on your behalf
-**Current focus:** All phases 1–5 complete (v1 roadmap)
+**Current focus:** Phases 1–5 and Phase 6 (API Key & Usage) complete
 
 ## Current Position
 
-Phase: 5 of 5 (UI Polish & Styling)
+Phase: 6 (API Key Management & Usage Tracking)
 Plan: 5 of 5 in phase
 Status: Complete
-Last activity: 2026-02-14 -- Phase 5 plan 05-05 complete; human verification approved
+Last activity: 2026-02-15 -- Phase 6 e2e spec passed (9/9); phase marked done in ROADMAP and STATE
 
 Progress: [██████████] 100%
 
@@ -55,6 +55,7 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 5 added: UI Polish & Styling - Comprehensive styling pass with consistent design system, responsive layouts, and polished UX
+- Phase 6 added: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
 
 ### Blockers/Concerns
 

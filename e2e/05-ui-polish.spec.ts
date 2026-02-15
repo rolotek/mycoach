@@ -109,7 +109,7 @@ test('10. Settings page shows LLM config and Save', async ({ page }) => {
   await page.goto(`${baseURL}/settings`);
   await expect(page).toHaveURL(/\/settings/, { timeout: 10000 });
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible({ timeout: 10000 });
-  await expect(page.getByText(/Choose your preferred LLM provider/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'LLM Configuration' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
 });
 
@@ -174,4 +174,32 @@ test('15. Reset button shows confirmation', async ({ page }) => {
   page.on('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Reset coaching' }).click();
   await expect(page.getByRole('link', { name: 'Coaching' }).first()).toBeVisible({ timeout: 5000 });
+});
+
+const hasTestUser =
+  process.env.TEST_USER_EMAIL && process.env.TEST_USER_PASSWORD;
+
+test('16. Chat shows API key error when default model is OpenAI and user has no OpenAI key', async ({
+  page,
+}) => {
+  test.skip(!hasTestUser, 'TEST_USER_EMAIL and TEST_USER_PASSWORD required');
+  await login(page);
+  await page.goto(`${baseURL}/settings`);
+  await expect(page).toHaveURL(/\/settings/, { timeout: 10000 });
+  await expect(page.getByText('LLM Configuration').first()).toBeVisible({ timeout: 10000 });
+  await page.getByLabel('Provider').click();
+  await page.getByRole('option', { name: 'OpenAI' }).click();
+  await page.getByLabel('Model').click();
+  await page.getByRole('option', { name: 'GPT-4o Mini' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Saved.')).toBeVisible({ timeout: 5000 });
+  await page.goto(`${baseURL}/chat`);
+  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await expect(page.getByPlaceholder('Message your coach...')).toBeVisible({ timeout: 10000 });
+  await page.getByPlaceholder('Message your coach...').fill('Hello');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect(page.getByRole('alert')).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText(/Please add your OpenAI API key|OpenAI.*Settings/i)
+  ).toBeVisible({ timeout: 5000 });
 });

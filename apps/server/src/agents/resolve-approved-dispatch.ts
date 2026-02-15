@@ -23,7 +23,6 @@ export type ExecutedDispatchResult = {
 export async function resolveApprovedDispatchTools(
   messages: UIMessage[],
   agents: AgentRow[],
-  modelId: string,
   userId: string,
   conversationId: string | undefined
 ): Promise<ExecutedDispatchResult[]> {
@@ -63,9 +62,9 @@ export async function resolveApprovedDispatchTools(
             },
             task,
             context,
-            modelId,
             userId,
-            conversationId
+            conversationId,
+            agent.preferredModel ?? null
           );
         const output = { agentName, result, executionId, agentId, taskThreadId };
         Object.assign(p, {

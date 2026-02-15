@@ -3,6 +3,8 @@ import { z } from "zod";
 import type { Context } from "./context";
 import {
   userSettings,
+  userApiKeys,
+  tokenUsage,
   conversations,
   documents,
   userFacts,
@@ -12,9 +14,11 @@ import {
   agentFeedback,
   agentVersions,
 } from "../db/schema";
+import { encrypt, decrypt } from "../crypto/encryption";
+import { validateApiKey } from "../llm/providers";
 import { seedStarterAgents } from "../agents/templates";
 import { checkAndEvolveAgent, saveAgentVersion } from "../agents/prompt-evolver";
-import { eq, and, desc, asc, sql, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, sql, isNull, gte } from "drizzle-orm";
 import { updateSettingsSchema } from "@mycoach/shared";
 import { embedText } from "../memory/embeddings";
 
@@ -60,6 +64,149 @@ const settingsRouter = t.router({
     }),
 });
 
+const apiKeyRouter = t.router({
+  save: protectedProcedure
+    .input(
+      z.object({
+        provider: z.enum(["anthropic", "openai", "google"]),
+        apiKey: z.string().min(10),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const valid = await validateApiKey(input.provider, input.apiKey);
+      if (!valid) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Invalid API key — could not authenticate with provider",
+        });
+      }
+      const encryptedKey = encrypt(input.apiKey);
+      await ctx.db
+        .insert(userApiKeys)
+        .values({
+          userId: ctx.user.id,
+          provider: input.provider,
+          encryptedKey,
+          isValid: true,
+          lastValidatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [userApiKeys.userId, userApiKeys.provider],
+          set: {
+            encryptedKey,
+            isValid: true,
+            lastValidatedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      return { success: true, provider: input.provider };
+    }),
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({
+        id: userApiKeys.id,
+        provider: userApiKeys.provider,
+        isValid: userApiKeys.isValid,
+        lastValidatedAt: userApiKeys.lastValidatedAt,
+        createdAt: userApiKeys.createdAt,
+        encryptedKey: userApiKeys.encryptedKey,
+      })
+      .from(userApiKeys)
+      .where(eq(userApiKeys.userId, ctx.user.id));
+    return rows.map((r) => {
+      let maskedKey = "";
+      try {
+        const raw = decrypt(r.encryptedKey);
+        maskedKey =
+          raw.length <= 11
+            ? raw
+            : `${raw.slice(0, 7)}...${raw.slice(-4)}`;
+      } catch {
+        maskedKey = "•••";
+      }
+      return {
+        id: r.id,
+        provider: r.provider,
+        isValid: r.isValid,
+        lastValidatedAt: r.lastValidatedAt,
+        createdAt: r.createdAt,
+        maskedKey,
+      };
+    });
+  }),
+  delete: protectedProcedure
+    .input(z.object({ provider: z.enum(["anthropic", "openai", "google"]) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(userApiKeys)
+        .where(
+          and(
+            eq(userApiKeys.userId, ctx.user.id),
+            eq(userApiKeys.provider, input.provider)
+          )
+        );
+      return { success: true };
+    }),
+});
+
+const usageRouter = t.router({
+  summary: protectedProcedure.query(async ({ ctx }) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyRows = await ctx.db
+      .select({
+        provider: tokenUsage.provider,
+        model: tokenUsage.model,
+        totalInput: sql<number>`COALESCE(SUM(${tokenUsage.inputTokens}), 0)`,
+        totalOutput: sql<number>`COALESCE(SUM(${tokenUsage.outputTokens}), 0)`,
+        totalCost: sql<number>`COALESCE(SUM(${tokenUsage.estimatedCostCents}), 0)`,
+        requestCount: sql<number>`COUNT(*)`,
+      })
+      .from(tokenUsage)
+      .where(
+        and(
+          eq(tokenUsage.userId, ctx.user.id),
+          gte(tokenUsage.createdAt, startOfMonth)
+        )
+      )
+      .groupBy(tokenUsage.provider, tokenUsage.model);
+    const [settings] = await ctx.db
+      .select()
+      .from(userSettings)
+      .where(eq(userSettings.userId, ctx.user.id));
+    const totalCostCents = monthlyRows.reduce(
+      (sum, r) => sum + (Number(r.totalCost) ?? 0),
+      0
+    );
+    const byProvider = Object.entries(
+      monthlyRows.reduce<Record<string, number>>((acc, r) => {
+        const p = r.provider ?? "unknown";
+        acc[p] = (acc[p] ?? 0) + Number(r.totalCost ?? 0);
+        return acc;
+      }, {})
+    )
+      .filter(([, cents]) => cents > 0)
+      .map(([provider, totalCostCents]) => ({ provider, totalCostCents }))
+      .sort((a, b) => b.totalCostCents - a.totalCostCents);
+    return {
+      breakdown: monthlyRows.map((r) => ({
+        provider: r.provider,
+        model: r.model,
+        totalInput: Number(r.totalInput),
+        totalOutput: Number(r.totalOutput),
+        totalCost: Number(r.totalCost),
+        requestCount: Number(r.requestCount),
+      })),
+      byProvider,
+      totalCostCents,
+      monthlyBudgetCents: settings?.monthlyBudgetCents ?? null,
+      periodStart: startOfMonth.toISOString(),
+    };
+  }),
+});
+
 const llmRouter = t.router({
   listProviders: publicProcedure.query(() => [
     {
@@ -71,6 +218,11 @@ const llmRouter = t.router({
           name: "Claude Sonnet 4",
           providerId: "anthropic",
         },
+        {
+          id: "anthropic:claude-haiku-3-20250414",
+          name: "Claude Haiku 3",
+          providerId: "anthropic",
+        },
       ],
     },
     {
@@ -78,6 +230,16 @@ const llmRouter = t.router({
       name: "OpenAI",
       models: [
         { id: "openai:gpt-4o", name: "GPT-4o", providerId: "openai" },
+        { id: "openai:gpt-4o-mini", name: "GPT-4o Mini", providerId: "openai" },
+      ],
+    },
+    {
+      id: "google",
+      name: "Google (Gemini)",
+      models: [
+        { id: "google:gemini-2.0-flash", name: "Gemini 2.0 Flash", providerId: "google" },
+        { id: "google:gemini-1.5-pro", name: "Gemini 1.5 Pro", providerId: "google" },
+        { id: "google:gemini-1.5-flash", name: "Gemini 1.5 Flash", providerId: "google" },
       ],
     },
     {
@@ -581,6 +743,7 @@ const agentRouter = t.router({
         description: z.string().min(1).max(500).optional(),
         systemPrompt: z.string().min(1).optional(),
         icon: z.string().optional(),
+        preferredModel: z.string().max(100).nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -601,6 +764,7 @@ const agentRouter = t.router({
         description?: string;
         systemPrompt?: string;
         icon?: string | null;
+        preferredModel?: string | null;
         updatedAt: Date;
       } = { updatedAt: new Date() };
       if (input.name !== undefined) {
@@ -621,6 +785,8 @@ const agentRouter = t.router({
         updates.systemPrompt = input.systemPrompt;
       }
       if (input.icon !== undefined) updates.icon = input.icon ?? null;
+      if (input.preferredModel !== undefined)
+        updates.preferredModel = input.preferredModel;
 
       const [updated] = await ctx.db
         .update(agents)
@@ -678,6 +844,8 @@ const agentRouter = t.router({
 
 export const appRouter = t.router({
   settings: settingsRouter,
+  apiKey: apiKeyRouter,
+  usage: usageRouter,
   llm: llmRouter,
   conversation: conversationRouter,
   document: documentRouter,

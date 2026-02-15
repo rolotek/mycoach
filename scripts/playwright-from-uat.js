@@ -110,7 +110,8 @@ function parseUAT(content) {
     const blockContent = rest.slice(0, blockEnd);
     const fullBlock = m[0] + blockContent;
     const resultMatch = blockContent.match(/result:\s*(\S+)/);
-    const result = resultMatch ? resultMatch[1].trim() : '[pending]';
+    const raw = resultMatch ? resultMatch[1].trim() : 'pending';
+    const result = raw === '[pending]' || raw === 'pending' ? '[pending]' : raw;
     const expectedMatch = blockContent.match(/expected:\s*(.+?)(?=\n\w|\n\n|$)/s);
     const expected = expectedMatch ? expectedMatch[1].trim() : '';
     tests.push({ num, name, result, fullBlock, expected, start });
@@ -130,7 +131,7 @@ function updateUATContent(content, playwrightResults) {
     const newResult = pw.ok
       ? `result: pass`
       : `result: issue\nreported: "Playwright: failed"\nseverity: major`;
-    const newFullBlock = t.fullBlock.replace(/result:\s*\[\s*pending\s*\](\n(?:reported:|severity:).*)?/, newResult);
+    const newFullBlock = t.fullBlock.replace(/result:\s*(?:\[\s*pending\s*\]|pending)(\n(?:reported:|severity:).*)?/, newResult);
     updates.push({ start: t.start, oldLen: t.fullBlock.length, newFullBlock });
   }
   let out = content;

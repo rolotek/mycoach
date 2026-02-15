@@ -95,6 +95,8 @@ export const userRelations = relations(user, ({ many }) => ({
   documents: many(documents),
   userFacts: many(userFacts),
   agents: many(agents),
+  apiKeys: many(userApiKeys),
+  tokenUsage: many(tokenUsage),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -122,6 +124,7 @@ export const userSettings = pgTable("user_settings", {
     "anthropic:claude-sonnet-4-20250514"
   ),
   settings: jsonb("settings").default({}),
+  monthlyBudgetCents: integer("monthly_budget_cents"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -232,6 +235,7 @@ export const agents = pgTable(
     systemPrompt: text("system_prompt").notNull(),
     isStarter: boolean("is_starter").default(false).notNull(),
     icon: text("icon"),
+    preferredModel: varchar("preferred_model", { length: 100 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     archivedAt: timestamp("archived_at"),
@@ -314,6 +318,51 @@ export const agentVersions = pgTable(
   ]
 );
 
+// Phase 6: API Key Management & Usage Tracking
+export const userApiKeys = pgTable(
+  "user_api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 50 }).notNull(),
+    encryptedKey: text("encrypted_key").notNull(),
+    isValid: boolean("is_valid").default(true),
+    lastValidatedAt: timestamp("last_validated_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("user_api_keys_userId_idx").on(table.userId),
+    unique("user_api_keys_userId_provider_idx").on(table.userId, table.provider),
+  ]
+);
+
+export const tokenUsage = pgTable(
+  "token_usage",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id").references(
+      () => conversations.id,
+      { onDelete: "set null" }
+    ),
+    provider: varchar("provider", { length: 50 }).notNull(),
+    model: varchar("model", { length: 100 }).notNull(),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    estimatedCostCents: integer("estimated_cost_cents").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("token_usage_userId_idx").on(table.userId),
+    index("token_usage_userId_createdAt_idx").on(table.userId, table.createdAt),
+  ]
+);
+
 export const conversationRelations = relations(conversations, ({ one, many }) => ({
   user: one(user, {
     fields: [conversations.userId],
@@ -371,6 +420,24 @@ export const agentVersionRelations = relations(agentVersions, ({ one }) => ({
   agent: one(agents, {
     fields: [agentVersions.agentId],
     references: [agents.id],
+  }),
+}));
+
+export const userApiKeysRelations = relations(userApiKeys, ({ one }) => ({
+  user: one(user, {
+    fields: [userApiKeys.userId],
+    references: [user.id],
+  }),
+}));
+
+export const tokenUsageRelations = relations(tokenUsage, ({ one }) => ({
+  user: one(user, {
+    fields: [tokenUsage.userId],
+    references: [user.id],
+  }),
+  conversation: one(conversations, {
+    fields: [tokenUsage.conversationId],
+    references: [conversations.id],
   }),
 }));
 

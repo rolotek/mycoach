@@ -78,7 +78,7 @@ export function MessageList({
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-      {messages.map((m) => {
+      {messages.map((m, index) => {
         const isUser = m.role === "user";
         const textParts = m.parts?.filter((p) => p.type === "text") ?? [];
         const rawText = textParts.map((p) => (p as { text?: string }).text).join("") ?? "";
@@ -86,10 +86,11 @@ export function MessageList({
         const dispatchParts = m.parts?.filter(
           (p) => typeof p.type === "string" && p.type.startsWith("tool-dispatch_")
         ) ?? [];
+        const key = typeof m.id === "string" && m.id.trim() ? m.id : `msg-${index}`;
 
         return (
           <div
-            key={m.id ?? Math.random()}
+            key={key}
             className={`flex flex-col gap-2 ${isUser ? "items-end" : "items-start"}`}
           >
             {!isUser && dispatchParts.length > 0 && (
@@ -114,7 +115,7 @@ export function MessageList({
                   const agentName = extractAgentName(toolName);
                   if (part.state === "approval-requested" && part.approval?.id && addToolApprovalResponse) {
                     return (
-                      <div key={`${m.id}-${i}`} className="max-w-[85%]">
+                      <div key={`${key}-${i}`} className="max-w-[85%]">
                         <AgentApprovalCard
                           agentName={agentName}
                           task={part.input?.task ?? ""}
@@ -138,7 +139,7 @@ export function MessageList({
                     const out = part.output;
                     if (out.taskThreadId) {
                       return (
-                        <div key={`${m.id}-${i}`} className="max-w-[85%]">
+                        <div key={`${key}-${i}`} className="max-w-[85%]">
                           <AgentSummaryCard
                             agentName={out.agentName ?? agentName}
                             task={part.input?.task ?? "Agent task"}
@@ -153,7 +154,7 @@ export function MessageList({
                         : String(out.result ?? "");
                     const name = out.agentName ?? agentName;
                     return (
-                      <div key={`${m.id}-${i}`} className="max-w-[85%]">
+                      <div key={`${key}-${i}`} className="max-w-[85%]">
                         <AgentResultCard
                           agentName={name}
                           result={result}
@@ -165,7 +166,7 @@ export function MessageList({
                   }
                   if (part.state === "output-denied") {
                     return (
-                      <div key={`${m.id}-${i}`} className="max-w-[85%]">
+                      <div key={`${key}-${i}`} className="max-w-[85%]">
                         <AgentDeniedCard />
                       </div>
                     );
@@ -173,7 +174,7 @@ export function MessageList({
                   if (part.state === "call" || part.state === "input-available") {
                     return (
                       <div
-                        key={`${m.id}-${i}`}
+                        key={`${key}-${i}`}
                         className="max-w-[85%] rounded-lg bg-muted px-4 py-2 text-sm text-muted-foreground"
                       >
                         Routing to {agentName}...
@@ -203,22 +204,25 @@ export function MessageList({
           </div>
         );
       })}
-      {status === "streaming" && (
+      {(status === "submitted" || status === "streaming") && (
         <div className="flex justify-start">
           <div className="rounded-lg bg-muted px-4 py-2 text-muted-foreground">
-            <span className="flex gap-1">
-              <span
-                className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
-                style={{ animationDelay: "0ms" }}
-              />
-              <span
-                className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
-                style={{ animationDelay: "150ms" }}
-              />
-              <span
-                className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
-                style={{ animationDelay: "300ms" }}
-              />
+            <span className="flex items-center gap-2">
+              <span className="text-sm">Thinking…</span>
+              <span className="flex gap-1">
+                <span
+                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <span
+                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <span
+                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
+                  style={{ animationDelay: "300ms" }}
+                />
+              </span>
             </span>
           </div>
         </div>

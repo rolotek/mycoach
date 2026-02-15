@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -14,6 +14,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentIcon } from "@/components/agent-icon";
@@ -22,19 +30,32 @@ export default function AgentDetailPage() {
   const id = useParams().id as string;
   const utils = trpc.useUtils();
   const { data: agents } = trpc.agent.listAll.useQuery();
+  const { data: providers = [] } = trpc.llm.listProviders.useQuery();
   const { data: versions, isLoading: versionsLoading } =
     trpc.agentVersion.list.useQuery({ agentId: id });
   const { data: feedbackList } = trpc.agentFeedback.listByAgent.useQuery({
     agentId: id,
   });
+  const PREFERRED_MODEL_DEFAULT = "__default__";
+  const [preferredModel, setPreferredModel] = useState<string>(PREFERRED_MODEL_DEFAULT);
+
   const revertMut = trpc.agentVersion.revert.useMutation({
     onSuccess: () => {
       utils.agentVersion.list.invalidate();
       utils.agent.listAll.invalidate();
     },
   });
+  const updateAgentMut = trpc.agent.update.useMutation({
+    onSuccess: () => utils.agent.listAll.invalidate(),
+  });
 
   const agent = agents?.find((a) => a.id === id);
+
+  useEffect(() => {
+    if (agent) {
+      setPreferredModel(agent.preferredModel ?? PREFERRED_MODEL_DEFAULT);
+    }
+  }, [agent]);
 
   const positiveCount = feedbackList?.filter((f) => f.rating === "positive").length ?? 0;
   const negativeCount = feedbackList?.filter((f) => f.rating === "negative").length ?? 0;
@@ -76,7 +97,47 @@ export default function AgentDetailPage() {
           </div>
           <CardDescription>{agent.description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Preferred model</Label>
+            <p className="text-xs text-muted-foreground">
+              Override the default model for this agent. Leave as &quot;Use Default&quot; to use your
+              global setting.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={preferredModel}
+                onValueChange={setPreferredModel}
+                disabled={!!agent.archivedAt}
+              >
+                <SelectTrigger className="w-full max-w-sm">
+                  <SelectValue placeholder="Use Default" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={PREFERRED_MODEL_DEFAULT}>Use Default</SelectItem>
+                  {providers.map((p) =>
+                    p.models.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {p.name} — {m.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() =>
+                  updateAgentMut.mutate({
+                    id,
+                    preferredModel:
+                      preferredModel === PREFERRED_MODEL_DEFAULT ? null : preferredModel,
+                  })
+                }
+                disabled={updateAgentMut.isPending || !!agent.archivedAt}
+              >
+                {updateAgentMut.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
           <Tabs defaultValue="prompt">
             <TabsList>
               <TabsTrigger value="prompt">Prompt</TabsTrigger>

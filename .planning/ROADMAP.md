@@ -123,3 +123,17 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 3. Agent System | 0/3 | Planned | - |
 | 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
 | 5. UI Polish & Styling | 5/9 | In progress | - |
+| 6. API Key & Usage | 5/5 | Complete | 2026-02-15 |
+
+### Phase 6: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
+
+**Goal:** Users can store their own API keys (Anthropic/OpenAI) per account, choose default and per-agent models, have chat and agents use those keys with fallback to env keys, see token usage and estimated cost for the current month, and enforce an optional monthly budget (no provider billing APIs; local tracking via AI SDK onFinish + pricing table).
+**Depends on:** Phase 5
+**Plans:** 5 plans
+
+Plans:
+- [x] 06-01-PLAN.md — DB schema (userApiKeys, tokenUsage, monthlyBudgetCents, preferredModel on agents), encryption module, pricing module
+- [x] 06-02-PLAN.md — getUserModel/resolveUserModel/validateApiKey, apiKey tRPC (save/list/delete), agent update preferredModel
+- [x] 06-03-PLAN.md — Chat route + agent executor/chief-of-staff/agent-tools: per-user model, token tracking, budget check
+- [x] 06-04-PLAN.md — Settings UI (API keys, budget, usage dashboard), usage.summary tRPC
+- [x] 06-05-PLAN.md — Agent detail page model selection + end-to-end human verification

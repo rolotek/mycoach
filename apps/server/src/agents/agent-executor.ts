@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { agentExecutions, conversations } from "../db/schema";
-import { getModel } from "../llm/providers";
+import { agentExecutions, conversations, tokenUsage } from "../db/schema";
+import { resolveUserModel } from "../llm/providers";
+import { calculateCostCents } from "../llm/pricing";
 
 export type SpecialistAgent = {
   id: string;
@@ -15,9 +16,9 @@ export async function executeSpecialistAgent(
   agent: SpecialistAgent,
   task: string,
   context: string | undefined,
-  modelId: string,
   userId: string,
-  conversationId: string | undefined
+  conversationId: string | undefined,
+  agentPreferredModel?: string | null
 ): Promise<{
   agentName: string;
   result: string;
@@ -38,14 +39,32 @@ export async function executeSpecialistAgent(
 
   if (!execution) throw new Error("Failed to create agent execution row");
 
+  const resolved = await resolveUserModel(userId, agentPreferredModel ?? undefined);
+
   try {
     const result = await generateText({
-      model: getModel(modelId),
+      model: resolved.model,
       system: agent.systemPrompt,
       prompt: context
         ? `Task: ${task}\n\nContext: ${context}`
         : `Task: ${task}`,
     });
+
+    db.insert(tokenUsage)
+      .values({
+        userId,
+        conversationId: conversationId ?? null,
+        provider: resolved.provider,
+        model: resolved.modelName,
+        inputTokens: result.usage?.inputTokens ?? 0,
+        outputTokens: result.usage?.outputTokens ?? 0,
+        estimatedCostCents: calculateCostCents(
+          resolved.modelName,
+          result.usage?.inputTokens ?? 0,
+          result.usage?.outputTokens ?? 0
+        ),
+      })
+      .catch((err) => console.error("Agent usage tracking failed:", err));
 
     await db
       .update(agentExecutions)
