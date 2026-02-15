@@ -49,7 +49,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Database schema (conversations, memories, documents, userFacts) + pgvector + embedding/chunking utilities
+- [x] 02-01-PLAN.md — Database schema (conversations, memories, documents, userFacts) + pgvector + embedding/chunking utilities
 - [ ] 02-02-PLAN.md — Streaming chat endpoint + RAG retrieval + mode detection + background fact extraction
 - [ ] 02-03-PLAN.md — Document upload/processing pipeline + tRPC CRUD for conversations, documents, and user facts
 - [ ] 02-04-PLAN.md — Chat UI + memory management page + documents page + end-to-end verification
@@ -90,6 +90,6 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Verification | - |
-| 2. Coaching & Memory | 0/4 | Planned | - |
+| 2. Coaching & Memory | 1/4 | In progress | - |
 | 3. Agent System | 0/TBD | Not started | - |
 | 4. Agent Evolution | 0/TBD | Not started | - |
