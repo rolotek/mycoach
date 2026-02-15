@@ -1,3 +1,12 @@
+/**
+ * AES-256-GCM encryption for user API keys (at rest in userApiKeys.encryptedKey).
+ *
+ * Key rotation (future):
+ * 1. Generate new key: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ * 2. Run a one-off migration: for each userApiKeys row, decrypt with OLD key, re-encrypt with NEW key, update row.
+ * 3. Deploy with API_KEY_ENCRYPTION_KEY set to the new key only.
+ * 4. See docs/ops/api-key-encryption-rotation.md for a step-by-step runbook.
+ */
 import {
   createCipheriv,
   createDecipheriv,
