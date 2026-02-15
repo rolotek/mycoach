@@ -11,7 +11,8 @@ export function useCoachingChat(
   chatId: string,
   mode: string = "auto",
   initialMessages?: UIMessage[],
-  projectId?: string | null
+  projectId?: string | null,
+  milestoneId?: string | null
 ) {
   return useChat({
     id: chatId,
@@ -20,7 +21,12 @@ export function useCoachingChat(
     transport: new DefaultChatTransport({
       api: `${SERVER_URL}/api/chat`,
       credentials: "include",
-      body: { chatId, mode, ...(projectId ? { projectId } : {}) },
+      body: {
+        chatId,
+        mode,
+        ...(projectId ? { projectId } : {}),
+        ...(milestoneId ? { milestoneId } : {}),
+      },
     }),
   });
 }

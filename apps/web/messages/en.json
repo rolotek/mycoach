@@ -226,7 +226,12 @@
     "showArchived": "Show completed & archived",
     "hideArchived": "Hide completed & archived",
     "uploadDocument": "Upload & attach",
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "openChatForSection": "Chat about this section",
+    "sectionDocs": "Section documents",
+    "sectionLinks": "Section links",
+    "attachDocToSection": "Attach doc to section...",
+    "addLinkToSection": "Add link to section"
   },
   "sidebar": {
     "navigation": "Navigation",

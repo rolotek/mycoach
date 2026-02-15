@@ -23,6 +23,7 @@ export default function ChatIdPage() {
   const searchParams = useSearchParams();
   const chatId = params.id as string;
   const projectId = searchParams.get("projectId") ?? undefined;
+  const milestoneId = searchParams.get("milestoneId") ?? undefined;
   const [mode, setMode] = useState("auto");
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,7 +43,13 @@ export default function ChatIdPage() {
     addToolApprovalResponse,
     error: chatError,
     clearError,
-  } = useCoachingChat(chatId, mode, undefined, projectId || null);
+  } = useCoachingChat(
+    chatId,
+    mode,
+    undefined,
+    projectId || null,
+    milestoneId || null
+  );
 
   useEffect(() => {
     if (!conv?.messages || !Array.isArray(conv.messages)) return;

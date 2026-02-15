@@ -11,11 +11,14 @@ export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId") ?? undefined;
+  const milestoneId = searchParams.get("milestoneId") ?? undefined;
   const getOrCreate = trpc.conversation.getOrCreateCoaching.useMutation({
     onSuccess: (data) => {
-      const url = projectId
-        ? `/chat/${data.id}?projectId=${encodeURIComponent(projectId)}`
-        : `/chat/${data.id}`;
+      const params = new URLSearchParams();
+      if (projectId) params.set("projectId", projectId);
+      if (milestoneId) params.set("milestoneId", milestoneId);
+      const qs = params.toString();
+      const url = qs ? `/chat/${data.id}?${qs}` : `/chat/${data.id}`;
       router.replace(url);
     },
   });

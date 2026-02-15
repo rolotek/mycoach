@@ -99,6 +99,9 @@ export default function ProjectDetailPage() {
   const [milestoneTaskDesc, setMilestoneTaskDesc] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [addSectionLinkMilestoneId, setAddSectionLinkMilestoneId] = useState<string | null>(null);
+  const [sectionLinkLabel, setSectionLinkLabel] = useState("");
+  const [sectionLinkUrl, setSectionLinkUrl] = useState("");
 
   const t = useTranslations("projects");
   const tCommon = useTranslations("common");
@@ -114,6 +117,12 @@ export default function ProjectDetailPage() {
 
   const attachedDocIds = new Set(project.documents?.map((d) => d.id) ?? []);
   const availableDocs = documents?.filter((d) => !attachedDocIds.has(d.id)) ?? [];
+  const projectLevelDocs = (project.documents ?? []).filter(
+    (d: { milestoneId?: string | null }) => !d.milestoneId
+  );
+  const projectLevelLinks = (project.links ?? []).filter(
+    (l: { milestoneId?: string | null }) => !l.milestoneId
+  );
 
   return (
     <div className="max-w-4xl space-y-6 p-4 md:p-6">
@@ -210,8 +219,8 @@ export default function ProjectDetailPage() {
           <div>
             <Label className="mb-2 block">{t("attachedDocuments")}</Label>
             <ul className="space-y-1">
-              {project.documents?.length
-                ? project.documents.map((d) => (
+              {projectLevelDocs.length
+                ? projectLevelDocs.map((d) => (
                     <li
                       key={d.id}
                       className="flex items-center justify-between rounded border px-2 py-1"
@@ -298,8 +307,8 @@ export default function ProjectDetailPage() {
           <div>
             <Label className="mb-2 block">{t("links")}</Label>
             <ul className="space-y-1">
-              {project.links?.length
-                ? project.links.map((l) => (
+              {projectLevelLinks.length
+                ? projectLevelLinks.map((l) => (
                     <li
                       key={l.id}
                       className="flex items-center justify-between rounded border px-2 py-1"
@@ -404,6 +413,92 @@ export default function ProjectDetailPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </div>
+                      <div className="border-t bg-muted/20 px-3 py-2 space-y-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/chat?projectId=${id}&milestoneId=${m.id}`}>
+                            <MessageSquare className="mr-1 h-3 w-3" />
+                            {t("openChatForSection")}
+                          </Link>
+                        </Button>
+                        {(() => {
+                          const sectionDocs = (project.documents ?? []).filter(
+                            (d: { milestoneId?: string | null }) => d.milestoneId === m.id
+                          );
+                          const sectionLinksList = (project.links ?? []).filter(
+                            (l: { milestoneId?: string | null }) => l.milestoneId === m.id
+                          );
+                          return (
+                            <>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">{t("sectionDocs")}</Label>
+                                {sectionDocs.length > 0 ? (
+                                  <ul className="mt-1 space-y-0.5">
+                                    {sectionDocs.map((d) => (
+                                      <li key={d.id} className="flex items-center justify-between rounded border px-2 py-0.5 text-sm">
+                                        <span>{d.filename}</span>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeDocument.mutate({ projectId: id, documentId: d.id })}>
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{t("noneAttached")}</p>
+                                )}
+                                {availableDocs.length > 0 && (
+                                  <Select
+                                    onValueChange={(docId) => {
+                                      addDocument.mutate({ projectId: id, documentId: docId, milestoneId: m.id });
+                                    }}
+                                  >
+                                    <SelectTrigger className="mt-1 h-8 w-full max-w-xs">
+                                      <SelectValue placeholder={t("attachDocToSection")} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {availableDocs.map((doc) => (
+                                        <SelectItem key={doc.id} value={doc.id}>{doc.filename}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">{t("sectionLinks")}</Label>
+                                {sectionLinksList.length > 0 ? (
+                                  <ul className="mt-1 space-y-0.5">
+                                    {sectionLinksList.map((l) => {
+                                      const LinkIcon = getLinkIcon((l as { linkType?: string }).linkType ?? "generic");
+                                      return (
+                                        <li key={l.id} className="flex items-center justify-between rounded border px-2 py-0.5 text-sm">
+                                          <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center">
+                                            {l.label}
+                                            <LinkIcon className="ml-1 h-3 w-3 shrink-0" />
+                                          </a>
+                                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeLink.mutate({ projectId: id, linkId: l.id })}>
+                                            <Trash2 className="h-3 w-3" />
+                                          </Button>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{t("noLinks")}</p>
+                                )}
+                                {addSectionLinkMilestoneId === m.id ? (
+                                  <div className="mt-1 flex gap-1 flex-wrap">
+                                    <Input placeholder={t("label")} value={sectionLinkLabel} onChange={(e) => setSectionLinkLabel(e.target.value)} className="h-8 max-w-[120px]" />
+                                    <Input placeholder={t("linkUrlPlaceholder")} value={sectionLinkUrl} onChange={(e) => setSectionLinkUrl(e.target.value)} className="h-8 flex-1 min-w-0" />
+                                    <Button size="sm" className="h-8" onClick={() => { if (sectionLinkLabel.trim() && sectionLinkUrl.trim()) { addLink.mutate({ projectId: id, label: sectionLinkLabel.trim(), url: sectionLinkUrl.trim(), milestoneId: m.id }); setSectionLinkLabel(""); setSectionLinkUrl(""); setAddSectionLinkMilestoneId(null); } }}>{t("addLink")}</Button>
+                                    <Button variant="ghost" size="sm" className="h-8" onClick={() => { setAddSectionLinkMilestoneId(null); setSectionLinkLabel(""); setSectionLinkUrl(""); }}>{tCommon("cancel")}</Button>
+                                  </div>
+                                ) : (
+                                  <Button variant="ghost" size="sm" className="mt-1 h-8 text-muted-foreground" onClick={() => setAddSectionLinkMilestoneId(m.id)}>{t("addLinkToSection")}</Button>
+                                )}
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                       {(addTaskToMilestoneId === m.id || milestoneTasks.length > 0) && (
                         <div className="border-t bg-muted/30 px-3 py-2 space-y-1">
