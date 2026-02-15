@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -9,10 +9,11 @@ import {
   MessageSquare,
   Plus,
   Trash2,
-  ExternalLink,
   GripVertical,
+  Upload,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { getLinkIcon } from "@/lib/link-type-utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,6 +34,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const SERVER_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
 
 function formatDate(d: Date | string | null): string {
   if (!d) return "—";
@@ -93,6 +97,8 @@ export default function ProjectDetailPage() {
   const [addTaskToMilestoneId, setAddTaskToMilestoneId] = useState<string | null>(null);
   const [milestoneTaskTitle, setMilestoneTaskTitle] = useState("");
   const [milestoneTaskDesc, setMilestoneTaskDesc] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const t = useTranslations("projects");
   const tCommon = useTranslations("common");
@@ -225,24 +231,69 @@ export default function ProjectDetailPage() {
                   ))
                 : t("noneAttached")}
             </ul>
-            {availableDocs.length > 0 && (
-              <Select
-                onValueChange={(docId) => {
-                  addDocument.mutate({ projectId: id, documentId: docId });
-                }}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {availableDocs.length > 0 && (
+                <Select
+                  onValueChange={(docId) => {
+                    addDocument.mutate({ projectId: id, documentId: docId });
+                  }}
+                >
+                  <SelectTrigger className="w-full max-w-xs">
+                    <SelectValue placeholder={t("attachDocument")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDocs.map((doc) => (
+                      <SelectItem key={doc.id} value={doc.id}>
+                        {doc.filename}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
               >
-                <SelectTrigger className="mt-2 w-full max-w-xs">
-                  <SelectValue placeholder={t("attachDocument")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableDocs.map((doc) => (
-                    <SelectItem key={doc.id} value={doc.id}>
-                      {doc.filename}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+                <Upload className="mr-1 h-3 w-3" />
+                {uploading ? t("uploading") : t("uploadDocument")}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setUploading(true);
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    fetch(`${SERVER_URL}/api/documents/upload`, {
+                      method: "POST",
+                      body: formData,
+                      credentials: "include",
+                    })
+                      .then((res) => {
+                        if (!res.ok) throw new Error("Upload failed");
+                        return res.json();
+                      })
+                      .then((doc: { id: string }) => {
+                        addDocument.mutate({
+                          projectId: id,
+                          documentId: doc.id,
+                        });
+                        utils.project.get.invalidate({ id });
+                        utils.document.list.invalidate();
+                      })
+                      .finally(() => setUploading(false));
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </div>
           </div>
           <div>
             <Label className="mb-2 block">{t("links")}</Label>
@@ -257,10 +308,17 @@ export default function ProjectDetailPage() {
                         href={l.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
+                        className="text-sm text-primary hover:underline inline-flex items-center"
                       >
                         {l.label}
-                        <ExternalLink className="ml-1 inline h-3 w-3" />
+                        {(() => {
+                          const LinkIcon = getLinkIcon(
+                            (l as { linkType?: string }).linkType ?? "generic"
+                          );
+                          return (
+                            <LinkIcon className="ml-1 h-3 w-3 shrink-0" />
+                          );
+                        })()}
                       </a>
                       <Button
                         variant="ghost"
