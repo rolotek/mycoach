@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Coaching & Memory** - Conversational coach with persistent memory and document knowledge
 - [ ] **Phase 3: Agent System** - Dynamic agent creation, starter templates, and suggest-then-confirm delegation
 - [x] **Phase 4: Agent Evolution** - Feedback-driven agent improvement and agent lifecycle management
-- [x] **Phase 5: UI Polish & Styling** - Comprehensive styling pass with consistent design system, responsive layouts, and polished UX
+- [ ] **Phase 5: UI Polish & Styling** - Comprehensive styling pass with consistent design system, responsive layouts, polished UX, and hybrid coaching + task thread conversation model
 
 ## Phase Details
 
@@ -87,7 +87,7 @@ Plans:
 - [x] 04-03-PLAN.md — Feedback UI in chat + agent management page with version history and archive
 
 ### Phase 5: UI Polish & Styling
-**Goal**: Every page has a consistent, polished design with responsive layouts and a cohesive design system
+**Goal**: Every page has a consistent, polished design with responsive layouts, a cohesive design system, and a hybrid coaching + task thread conversation model
 **Depends on**: Phase 4
 **Requirements**: Cross-cutting (all pages and components)
 **Success Criteria** (what must be TRUE):
@@ -95,7 +95,10 @@ Plans:
   2. Layout is responsive and usable on mobile, tablet, and desktop
   3. Interactive elements have proper hover, focus, and loading states
   4. The app looks professionally designed and polished
-**Plans**: 5 plans
+  5. Single pinned coaching thread with separate task threads for agent dispatches
+  6. Agent dispatch results show as compact inline summary in coaching thread with link to full result in task thread
+  7. Sidebar shows pinned coaching thread at top with reset button, task threads below by recency
+**Plans**: 8 plans
 
 Plans:
 - [x] 05-01-PLAN.md — shadcn/ui init, design tokens, dark mode, Inter font, app shell with sidebar navigation, shared components (ChatMarkdown, PageHeader)
@@ -103,6 +106,9 @@ Plans:
 - [x] 05-03-PLAN.md — Restyle chat interface: conversation sidebar, message list with react-markdown, input, agent cards
 - [x] 05-04-PLAN.md — Restyle agents (list + detail), memory, and documents pages with shadcn/ui components
 - [x] 05-05-PLAN.md — Final consistency audit, raw class cleanup, and visual verification checkpoint
+- [ ] 05-06-PLAN.md — Conversation model backend: type/parentId columns, reset mutation, task thread creation on agent dispatch
+- [ ] 05-07-PLAN.md — Conversation model frontend: pinned coaching sidebar, task thread list, inline summary cards, reset button
+- [ ] 05-08-PLAN.md — Build verification + human verification of coaching + task thread UX
 
 ## Progress
 
@@ -115,4 +121,4 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
 | 3. Agent System | 0/3 | Planned | - |
 | 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
-| 5. UI Polish & Styling | 5/5 | Complete | 2026-02-14 |
+| 5. UI Polish & Styling | 5/8 | In Progress | - |
