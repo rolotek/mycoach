@@ -4,7 +4,12 @@ import type { AgentRow } from "./agent-tools";
 
 export type ExecutedDispatchResult = {
   toolCallId: string;
-  output: { agentName: string; result: string };
+  output: {
+    agentName: string;
+    result: string;
+    executionId: string;
+    agentId: string;
+  };
 };
 
 /**
@@ -48,19 +53,20 @@ export async function resolveApprovedDispatchTools(
       const task = p.input?.task ?? "";
       const context = p.input?.context;
       try {
-        const { agentName, result } = await executeSpecialistAgent(
-          {
-            id: agent.id,
-            name: agent.name,
-            systemPrompt: agent.systemPrompt,
-          },
-          task,
-          context,
-          modelId,
-          userId,
-          conversationId
-        );
-        const output = { agentName, result };
+        const { agentName, result, executionId, agentId } =
+          await executeSpecialistAgent(
+            {
+              id: agent.id,
+              name: agent.name,
+              systemPrompt: agent.systemPrompt,
+            },
+            task,
+            context,
+            modelId,
+            userId,
+            conversationId
+          );
+        const output = { agentName, result, executionId, agentId };
         Object.assign(p, {
           state: "output-available",
           output,

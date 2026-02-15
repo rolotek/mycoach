@@ -13,7 +13,12 @@ export type MessageListMessage = {
     state?: string;
     input?: { task?: string };
     approval?: { id: string };
-    output?: { agentName?: string; result?: string };
+    output?: {
+      agentName?: string;
+      result?: string;
+      executionId?: string;
+      agentId?: string;
+    };
   }>;
 };
 
@@ -116,7 +121,12 @@ export function MessageList({
                     state?: string;
                     input?: { task?: string };
                     approval?: { id: string };
-                    output?: { agentName?: string; result?: string };
+                    output?: {
+                      agentName?: string;
+                      result?: string;
+                      executionId?: string;
+                      agentId?: string;
+                    };
                   };
                   const toolName = part.type.startsWith("tool-")
                     ? part.type.slice(5)
@@ -145,15 +155,20 @@ export function MessageList({
                     );
                   }
                   if (part.state === "output-available" && part.output) {
-                    const out = part.output as {
-                      agentName?: string;
-                      result?: string;
-                    };
-                    const result = typeof out.result === "string" ? out.result : String(out.result ?? "");
+                    const out = part.output;
+                    const result =
+                      typeof out.result === "string"
+                        ? out.result
+                        : String(out.result ?? "");
                     const name = out.agentName ?? agentName;
                     return (
                       <div key={`${m.id}-${i}`} className="max-w-[85%]">
-                        <AgentResultCard agentName={name} result={result} />
+                        <AgentResultCard
+                          agentName={name}
+                          result={result}
+                          executionId={out.executionId}
+                          agentId={out.agentId}
+                        />
                       </div>
                     );
                   }

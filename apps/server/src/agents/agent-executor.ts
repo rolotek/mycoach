@@ -17,7 +17,12 @@ export async function executeSpecialistAgent(
   modelId: string,
   userId: string,
   conversationId: string | undefined
-): Promise<{ agentName: string; result: string; executionId: string }> {
+): Promise<{
+  agentName: string;
+  result: string;
+  executionId: string;
+  agentId: string;
+}> {
   const [execution] = await db
     .insert(agentExecutions)
     .values({
@@ -53,6 +58,7 @@ export async function executeSpecialistAgent(
       agentName: agent.name,
       result: result.text,
       executionId: execution.id,
+      agentId: agent.id,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
