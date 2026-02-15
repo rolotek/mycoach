@@ -10,12 +10,16 @@ import { setupWebAppConsoleLogger } from './utils/console-logger';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
+function en(path: string) {
+  return `${baseURL}/en${path.startsWith('/') ? path : '/' + path}`;
+}
+
 async function login(page: import('@playwright/test').Page) {
-  await page.goto(`${baseURL}/login`);
+  await page.goto(en('/login'));
   await page.getByRole('textbox', { name: /email/i }).fill(process.env.TEST_USER_EMAIL!);
   await page.getByLabel(/password/i).fill(process.env.TEST_USER_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page).toHaveURL(/\/(dashboard|chat|home)/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/(en|fr-FR|it|ja|zh-CN|en-GB)\/(dashboard|chat|home)/, { timeout: 15000 });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -25,9 +29,9 @@ test.beforeEach(async ({ page }) => {
 test('1. Feedback buttons visible after agent result', async ({ page }) => {
   test.setTimeout(180000);
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('Draft an email to my team announcing our Q1 priorities.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Draft an email to my team announcing our Q1 priorities.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible({ timeout: 90000 });
   await page.getByRole('button', { name: 'Approve' }).click();
@@ -40,9 +44,9 @@ test('1. Feedback buttons visible after agent result', async ({ page }) => {
 test('2. Thumbs up submits and shows thanks', async ({ page }) => {
   test.setTimeout(180000);
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('Summarize the key risks of a 6-month project.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Summarize the key risks of a 6-month project.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible({ timeout: 90000 });
   await page.getByRole('button', { name: 'Approve' }).click();
@@ -55,9 +59,9 @@ test('2. Thumbs up submits and shows thanks', async ({ page }) => {
 test('3. Thumbs down shows correction UI', async ({ page }) => {
   test.setTimeout(180000);
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('List three bullet points for a status update.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('List three bullet points for a status update.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible({ timeout: 90000 });
   await page.getByRole('button', { name: 'Approve' }).click();
@@ -70,8 +74,8 @@ test('3. Thumbs down shows correction UI', async ({ page }) => {
 
 test('4. Agents page shows Archive and View History', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   await expect(page.getByRole('heading', { name: 'Agents' })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText('Contract Attorney').first()).toBeVisible({ timeout: 35000 });
   await expect(page.getByRole('button', { name: 'Archive' }).first()).toBeVisible({ timeout: 5000 });
@@ -80,8 +84,8 @@ test('4. Agents page shows Archive and View History', async ({ page }) => {
 
 test('5. Archive agent shows Archived badge and Unarchive', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   const uniqueName = `E2E Archive ${Date.now()}`;
   await page.getByRole('button', { name: 'Create Agent' }).click();
   await page.getByPlaceholder(/e\.g\. Contract Attorney/i).fill(uniqueName);
@@ -97,8 +101,8 @@ test('5. Archive agent shows Archived badge and Unarchive', async ({ page }) => 
 
 test('6. Unarchive restores active state', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   const uniqueName = `E2E Unarchive ${Date.now()}`;
   await page.getByRole('button', { name: 'Create Agent' }).click();
   await page.getByPlaceholder(/e\.g\. Contract Attorney/i).fill(uniqueName);
@@ -115,11 +119,11 @@ test('6. Unarchive restores active state', async ({ page }) => {
 
 test('7. View History opens agent detail with version history and feedback summary', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   await expect(page.getByText('Contract Attorney').first()).toBeVisible({ timeout: 35000 });
   await page.getByRole('link', { name: 'View History' }).first().click();
-  await expect(page).toHaveURL(/\/agents\/[a-f0-9-]+/, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/en\/agents\/[a-f0-9-]+/, { timeout: 10000 });
   await expect(page.getByRole('link', { name: 'Back to Agents' })).toBeVisible({ timeout: 5000 });
   await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible({ timeout: 5000 });
   await expect(page.getByRole('heading', { name: 'Feedback summary' })).toBeVisible({ timeout: 5000 });
@@ -127,11 +131,11 @@ test('7. View History opens agent detail with version history and feedback summa
 
 test('8. Agent detail shows current prompt and version list', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   await expect(page.getByText('Contract Attorney').first()).toBeVisible({ timeout: 35000 });
   await page.getByRole('link', { name: 'View History' }).first().click();
-  await expect(page).toHaveURL(/\/agents\/[a-f0-9-]+/, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/en\/agents\/[a-f0-9-]+/, { timeout: 10000 });
   await expect(page.getByRole('heading', { name: 'Current system prompt' })).toBeVisible({ timeout: 5000 });
   await expect(
     page.getByText('No version history yet').or(page.getByText(/Version \d+/)).or(page.locator('text=manual').first())

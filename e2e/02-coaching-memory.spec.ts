@@ -10,12 +10,16 @@ import { setupWebAppConsoleLogger } from './utils/console-logger';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
+function en(path: string) {
+  return `${baseURL}/en${path.startsWith('/') ? path : '/' + path}`;
+}
+
 async function login(page: import('@playwright/test').Page) {
-  await page.goto(`${baseURL}/login`);
+  await page.goto(en('/login'));
   await page.getByRole('textbox', { name: /email/i }).fill(process.env.TEST_USER_EMAIL!);
   await page.getByLabel(/password/i).fill(process.env.TEST_USER_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page).toHaveURL(/\/(dashboard|chat|home)/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/(en|fr-FR|it|ja|zh-CN|en-GB)\/(dashboard|chat)/, { timeout: 15000 });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -24,10 +28,10 @@ test.beforeEach(async ({ page }) => {
 
 test('1. New chat and streaming response', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await expect(page.getByPlaceholder('Message your coach...')).toBeVisible({ timeout: 10000 });
-  await page.getByPlaceholder('Message your coach...').fill('Hello, say OK in one word.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await expect(page.getByPlaceholder(/Message your coach/)).toBeVisible({ timeout: 10000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Hello, say OK in one word.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 5000 });
   await expect(page.getByText('...').or(page.locator('text=Coach').first())).toBeVisible({ timeout: 60000 });
@@ -36,38 +40,38 @@ test('1. New chat and streaming response', async ({ page }) => {
 
 test('2. Mode detection (auto)', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('What are the pros and cons of hiring a new team member?');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('What are the pros and cons of hiring a new team member?');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
   await page.getByRole('link', { name: 'New Chat' }).click();
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('I\'ve been feeling overwhelmed lately.');
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('I\'ve been feeling overwhelmed lately.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
 });
 
 test('3. Mode toggle (manual)', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
   await page.getByRole('button', { name: 'Task' }).click();
-  await page.getByPlaceholder('Message your coach...').fill('List three action items for planning a meeting.');
+  await page.getByPlaceholder(/Message your coach/).fill('List three action items for planning a meeting.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
   await page.getByRole('button', { name: 'Coaching' }).click();
-  await page.getByPlaceholder('Message your coach...').fill('How can I be more focused?');
+  await page.getByPlaceholder(/Message your coach/).fill('How can I be more focused?');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
 });
 
 test('4. Conversation persistence', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
   const chatUrl = page.url();
-  await page.getByPlaceholder('Message your coach...').fill('Remember this: persistence test.');
+  await page.getByPlaceholder(/Message your coach/).fill('Remember this: persistence test.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
   await page.reload();
@@ -78,27 +82,27 @@ test('4. Conversation persistence', async ({ page }) => {
 test('5. Conversation sidebar', async ({ page }) => {
   page.on('dialog', (dialog) => dialog.accept());
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
   const firstChatUrl = page.url();
   await page.getByRole('link', { name: 'New Chat' }).click();
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
   await expect(page).not.toHaveURL(firstChatUrl);
   await page.getByRole('link', { name: 'New Chat' }).click();
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
   await expect(page.getByText('New conversation').or(page.getByText('Just now')).first()).toBeVisible({ timeout: 5000 });
   const convLinks = page.getByRole('link', { name: /New conversation|Today|This week/ });
   await expect(convLinks.first()).toBeVisible();
   await convLinks.first().click();
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/);
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/);
   const deleteBtn = page.getByRole('button', { name: 'Delete' }).first();
   await deleteBtn.click();
-  await expect(page).toHaveURL(/\/chat/, { timeout: 5000 });
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 5000 });
 });
 
 test('6. Document upload', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/documents`);
+  await page.goto(en('/documents'));
   await expect(page.getByRole('heading', { name: 'Documents', exact: true })).toBeVisible({ timeout: 10000 });
   const fileInput = page.locator('#doc-upload');
   await fileInput.setInputFiles({
@@ -115,7 +119,7 @@ test('7. RAG (coach uses documents)', async ({ page }) => {
   const secret = `E2E_RAG_${stamp}`;
   const filename = `rag-test-${stamp}.txt`;
   await login(page);
-  await page.goto(`${baseURL}/documents`);
+  await page.goto(en('/documents'));
   await expect(page.getByRole('heading', { name: 'Documents', exact: true })).toBeVisible({ timeout: 10000 });
   await page.locator('#doc-upload').setInputFiles({
     name: filename,
@@ -124,9 +128,9 @@ test('7. RAG (coach uses documents)', async ({ page }) => {
   });
   await expect(page.getByText(filename)).toBeVisible({ timeout: 15000 });
   await expect(page.locator('li').filter({ hasText: filename }).getByText('ready')).toBeVisible({ timeout: 25000 });
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill(`What is the secret code in my uploaded document? Answer with just the code.`);
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill(`What is the secret code in my uploaded document? Answer with just the code.`);
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
   // Verify RAG pipeline: coach returns non-empty response; exact secret when present, else any coach reply content
@@ -144,13 +148,13 @@ test('7. RAG (coach uses documents)', async ({ page }) => {
 test('8. Memory / facts', async ({ page }) => {
   page.on('dialog', (dialog) => dialog.accept());
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
   const fact = `E2E fact ${Date.now()} - I prefer testing in the morning.`;
-  await page.getByPlaceholder('Message your coach...').fill(fact);
+  await page.getByPlaceholder(/Message your coach/).fill(fact);
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
-  await page.goto(`${baseURL}/memory`);
+  await page.goto(en('/memory'));
   await expect(page.getByRole('heading', { name: 'What I Know About You' })).toBeVisible({ timeout: 10000 });
   // Fact extraction is async; accept either empty state or at least one fact, then verify edit/delete when facts exist
   const emptyState = page.getByText('No facts recorded yet');
@@ -183,17 +187,17 @@ test('8. Memory / facts', async ({ page }) => {
 
 test('9. Dashboard navigation', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/dashboard`);
+  await page.goto(en('/dashboard'));
   await expect(page.getByRole('heading', { name: /Welcome/ })).toBeVisible({ timeout: 10000 });
   await page.getByRole('link', { name: 'Start Coaching Session' }).click();
-  await expect(page).toHaveURL(/\/chat/, { timeout: 10000 });
-  await page.goto(`${baseURL}/dashboard`);
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 10000 });
+  await page.goto(en('/dashboard'));
   await page.getByRole('link', { name: 'Memory & Knowledge' }).click();
-  await expect(page).toHaveURL(/\/memory/, { timeout: 10000 });
-  await page.goto(`${baseURL}/dashboard`);
+  await expect(page).toHaveURL(/\/en\/memory/, { timeout: 10000 });
+  await page.goto(en('/dashboard'));
   await page.getByRole('link', { name: 'Documents' }).click();
-  await expect(page).toHaveURL(/\/documents/, { timeout: 10000 });
-  await page.goto(`${baseURL}/dashboard`);
+  await expect(page).toHaveURL(/\/en\/documents/, { timeout: 10000 });
+  await page.goto(en('/dashboard'));
   await page.getByRole('link', { name: 'Settings' }).click();
-  await expect(page).toHaveURL(/\/settings/, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/en\/settings/, { timeout: 10000 });
 });

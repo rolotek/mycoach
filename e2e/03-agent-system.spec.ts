@@ -10,12 +10,16 @@ import { setupWebAppConsoleLogger } from './utils/console-logger';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
+function en(path: string) {
+  return `${baseURL}/en${path.startsWith('/') ? path : '/' + path}`;
+}
+
 async function login(page: import('@playwright/test').Page) {
-  await page.goto(`${baseURL}/login`);
+  await page.goto(en('/login'));
   await page.getByRole('textbox', { name: /email/i }).fill(process.env.TEST_USER_EMAIL!);
   await page.getByLabel(/password/i).fill(process.env.TEST_USER_PASSWORD!);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page).toHaveURL(/\/(dashboard|chat|home)/, { timeout: 15000 });
+  await expect(page).toHaveURL(/\/(en|fr-FR|it|ja|zh-CN|en-GB)\/(dashboard|chat|home)/, { timeout: 15000 });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -24,8 +28,8 @@ test.beforeEach(async ({ page }) => {
 
 test('1. Agents page shows four starter templates', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   await expect(page.getByRole('heading', { name: 'Agents' })).toBeVisible({ timeout: 10000 });
   // Wait for list to load (seed runs on first list fetch); allow time for tRPC + seed
   await expect(page.getByRole('button', { name: 'Create Agent' })).toBeVisible({ timeout: 10000 });
@@ -38,8 +42,8 @@ test('1. Agents page shows four starter templates', async ({ page }) => {
 
 test('2. Create a new custom agent', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   await page.getByRole('button', { name: 'Create Agent' }).click();
   const uniqueName = `E2E Agent ${Date.now()}`;
   await page.getByPlaceholder(/e\.g\. Contract Attorney/i).fill(uniqueName);
@@ -51,8 +55,8 @@ test('2. Create a new custom agent', async ({ page }) => {
 
 test('3. Edit an agent', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   const uniqueName = `E2E Edit ${Date.now()}`;
   await page.getByRole('button', { name: 'Create Agent' }).click();
   await page.getByPlaceholder(/e\.g\. Contract Attorney/i).fill('Original Name');
@@ -69,8 +73,8 @@ test('3. Edit an agent', async ({ page }) => {
 test('4. Delete an agent', async ({ page }) => {
   page.on('dialog', (dialog) => dialog.accept());
   await login(page);
-  await page.goto(`${baseURL}/agents`);
-  await expect(page).toHaveURL(/\/agents/, { timeout: 10000 });
+  await page.goto(en('/agents'));
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 10000 });
   const uniqueName = `E2E Delete ${Date.now()}`;
   await page.getByRole('button', { name: 'Create Agent' }).click();
   await page.getByPlaceholder(/e\.g\. Contract Attorney/i).fill(uniqueName);
@@ -84,18 +88,18 @@ test('4. Delete an agent', async ({ page }) => {
 
 test('5. Dashboard links to Agents', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/dashboard`);
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
+  await page.goto(en('/dashboard'));
+  await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 10000 });
   await expect(page.getByRole('link', { name: 'Agents' })).toBeVisible({ timeout: 5000 });
   await page.getByRole('link', { name: 'Agents' }).click();
-  await expect(page).toHaveURL(/\/agents/, { timeout: 5000 });
+  await expect(page).toHaveURL(/\/en\/agents/, { timeout: 5000 });
 });
 
 test('6. Chat — coaching question gets direct response', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('Help me think through whether to take this new job offer.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Help me think through whether to take this new job offer.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText('Coach').first()).toBeVisible({ timeout: 60000 });
   await expect(page.getByRole('button', { name: 'Approve' })).not.toBeVisible({ timeout: 3000 }).catch(() => true);
@@ -103,9 +107,9 @@ test('6. Chat — coaching question gets direct response', async ({ page }) => {
 
 test('7. Chat — task request shows approval card', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('Draft an email to my team announcing our Q1 priorities.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Draft an email to my team announcing our Q1 priorities.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText(/Chief of Staff suggests|Delegate to/)).toBeVisible({ timeout: 90000 });
   await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible({ timeout: 5000 });
@@ -115,9 +119,9 @@ test('7. Chat — task request shows approval card', async ({ page }) => {
 test('8. Chat — approve agent dispatch', async ({ page }) => {
   test.setTimeout(180000); // Approve + specialist run + result can be slow
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('Draft an email to my team announcing our Q1 priorities.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Draft an email to my team announcing our Q1 priorities.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible({ timeout: 90000 });
   await page.getByRole('button', { name: 'Approve' }).click();
@@ -127,9 +131,9 @@ test('8. Chat — approve agent dispatch', async ({ page }) => {
 
 test('9. Chat — task suggests Contract Attorney', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('Review this contract clause: The vendor may terminate at any time with 30 days notice.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Review this contract clause: The vendor may terminate at any time with 30 days notice.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText(/Chief of Staff suggests|Delegate to|Contract Attorney/)).toBeVisible({ timeout: 90000 });
   await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible({ timeout: 5000 });
@@ -137,9 +141,9 @@ test('9. Chat — task suggests Contract Attorney', async ({ page }) => {
 
 test('10. Chat — deny agent dispatch', async ({ page }) => {
   await login(page);
-  await page.goto(`${baseURL}/chat`);
-  await expect(page).toHaveURL(/\/chat\/[a-f0-9-]+/, { timeout: 15000 });
-  await page.getByPlaceholder('Message your coach...').fill('Review this contract clause: The vendor may terminate at any time with 30 days notice.');
+  await page.goto(en('/chat'));
+  await expect(page).toHaveURL(/\/en\/chat\/[a-f0-9-]+/, { timeout: 15000 });
+  await page.getByPlaceholder(/Message your coach/).fill('Review this contract clause: The vendor may terminate at any time with 30 days notice.');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('button', { name: 'Deny' })).toBeVisible({ timeout: 90000 });
   await page.getByRole('button', { name: 'Deny' }).click();

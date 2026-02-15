@@ -65,7 +65,7 @@ Users can create and manage projects — flexible containers for focused work. A
 <deferred>
 ## Deferred Ideas
 
-None — discussion stayed within phase scope
+- Group chat / shared agent context within a project — when chief-of-staff delegates to multiple agents (e.g. research assistant + comms writer), allow agents to see each other's outputs within the project context instead of working in isolation. Future phase.
 
 </deferred>
 
