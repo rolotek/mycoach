@@ -12,8 +12,8 @@ MyCoach delivers an AI executive coach paired with a chief of staff that knows y
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Authentication, account isolation, and LLM provider abstraction
-- [ ] **Phase 2: Coaching & Memory** - Conversational coach with persistent memory and document knowledge
+- [x] **Phase 1: Foundation** - Authentication, account isolation, and LLM provider abstraction
+- [x] **Phase 2: Coaching & Memory** - Conversational coach with persistent memory and document knowledge
 - [ ] **Phase 3: Agent System** - Dynamic agent creation, starter templates, and suggest-then-confirm delegation
 - [ ] **Phase 4: Agent Evolution** - Feedback-driven agent improvement and agent lifecycle management
 
@@ -31,10 +31,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Monorepo scaffold + PostgreSQL + Drizzle DB + Hono server skeleton
-- [ ] 01-02-PLAN.md — Better Auth (email/password + OAuth) + tRPC router with auth context
-- [ ] 01-03-PLAN.md — AI SDK LLM provider registry (Anthropic, OpenAI, Ollama)
-- [ ] 01-04-PLAN.md — Frontend auth pages + settings UI + end-to-end verification
+- [x] 01-01-PLAN.md — Monorepo scaffold + PostgreSQL + Drizzle DB + Hono server skeleton
+- [x] 01-02-PLAN.md — Better Auth (email/password + OAuth) + tRPC router with auth context
+- [x] 01-03-PLAN.md — AI SDK LLM provider registry (Anthropic, OpenAI, Ollama)
+- [x] 01-04-PLAN.md — Frontend auth pages + settings UI + end-to-end verification
 
 ### Phase 2: Coaching & Memory
 **Goal**: Users have a persistent, context-aware coaching relationship that spans work and personal life
