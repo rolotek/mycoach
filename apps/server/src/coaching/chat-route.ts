@@ -1,11 +1,12 @@
 import { Hono } from "hono";
-import { streamText } from "ai";
+import { streamText, createAgentUIStreamResponse } from "ai";
 import { convertToModelMessages, tool } from "ai";
 import type { UIMessage } from "ai";
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "../db";
-import { conversations, userFacts } from "../db/schema";
+import { conversations, userFacts, agents } from "../db/schema";
 import { getModel } from "../llm/providers";
+import { buildChiefOfStaff } from "../agents/chief-of-staff";
 import { buildSystemPrompt } from "./system-prompt";
 import { detectMode, type ConversationMode } from "./mode-detector";
 import {
@@ -65,6 +66,70 @@ chatApp.post("/api/chat", async (c) => {
   const modelId =
     process.env.COACH_CHAT_MODEL ??
     `ollama:${process.env.OLLAMA_MODEL || "llama3.1"}`;
+
+  const contextSection =
+    relevantContext.length > 0
+      ? relevantContext
+          .map((r) => `- ${r.content}`)
+          .join("\n")
+      : "No prior context available.";
+  const factsByCategory = facts.reduce<Record<string, string[]>>(
+    (acc, { category, fact }) => {
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(fact);
+      return acc;
+    },
+    {}
+  );
+  const factsSection =
+    Object.keys(factsByCategory).length > 0
+      ? Object.entries(factsByCategory)
+          .map(([cat, f]) => `**${cat}:** ${f.join("; ")}`)
+          .join("\n")
+      : "No facts recorded yet.";
+
+  const userAgents = await db
+    .select()
+    .from(agents)
+    .where(eq(agents.userId, user.id));
+
+  if (userAgents.length > 0) {
+    const chiefOfStaff = buildChiefOfStaff({
+      agents: userAgents,
+      modelId,
+      userId: user.id,
+      conversationId: chatId ?? undefined,
+      ragContext: contextSection,
+      userFactsSection: factsSection,
+      mode: effectiveMode,
+    });
+    const response = await createAgentUIStreamResponse({
+      agent: chiefOfStaff,
+      uiMessages: messages,
+      headers: { "X-Chat-Id": chatId! },
+      onFinish: async ({ messages: updatedMessages }) => {
+        await db
+          .update(conversations)
+          .set({
+            messages: updatedMessages,
+            updatedAt: new Date(),
+            title:
+              messages.length <= 2 ? queryText.slice(0, 100) : undefined,
+          })
+          .where(
+            and(
+              eq(conversations.id, chatId!),
+              eq(conversations.userId, user.id)
+            )
+          );
+        extractFacts(chatId!, user.id, updatedMessages).catch((err) =>
+          console.error("Fact extraction failed:", err)
+        );
+      },
+    });
+    return response;
+  }
+
   const systemPrompt = buildSystemPrompt(
     relevantContext,
     facts,
