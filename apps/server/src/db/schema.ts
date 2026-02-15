@@ -226,6 +226,7 @@ export const agents = pgTable(
     icon: text("icon"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    archivedAt: timestamp("archived_at"),
   },
   (table) => [
     index("agents_userId_idx").on(table.userId),
@@ -256,6 +257,52 @@ export const agentExecutions = pgTable(
   (table) => [
     index("agent_executions_userId_idx").on(table.userId),
     index("agent_executions_agentId_idx").on(table.agentId),
+  ]
+);
+
+export const agentFeedback = pgTable(
+  "agent_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    executionId: uuid("execution_id").references(
+      () => agentExecutions.id,
+      { onDelete: "set null" }
+    ),
+    rating: text("rating").notNull(),
+    correction: text("correction"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("agent_feedback_agentId_idx").on(table.agentId),
+    index("agent_feedback_userId_idx").on(table.userId),
+  ]
+);
+
+export const agentVersions = pgTable(
+  "agent_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    systemPrompt: text("system_prompt").notNull(),
+    changeSource: text("change_source").notNull(),
+    changeSummary: text("change_summary"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("agent_versions_agentId_idx").on(table.agentId),
+    unique("agent_versions_agentId_version_unique").on(
+      table.agentId,
+      table.version
+    ),
   ]
 );
 
@@ -291,11 +338,35 @@ export const userFactRelations = relations(userFacts, ({ one }) => ({
   }),
 }));
 
-export const agentRelations = relations(agents, ({ one }) => ({
+export const agentFeedbackRelations = relations(agentFeedback, ({ one }) => ({
+  user: one(user, {
+    fields: [agentFeedback.userId],
+    references: [user.id],
+  }),
+  agent: one(agents, {
+    fields: [agentFeedback.agentId],
+    references: [agents.id],
+  }),
+  agentExecution: one(agentExecutions, {
+    fields: [agentFeedback.executionId],
+    references: [agentExecutions.id],
+  }),
+}));
+
+export const agentVersionRelations = relations(agentVersions, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentVersions.agentId],
+    references: [agents.id],
+  }),
+}));
+
+export const agentRelations = relations(agents, ({ one, many }) => ({
   user: one(user, {
     fields: [agents.userId],
     references: [user.id],
   }),
+  feedback: many(agentFeedback),
+  versions: many(agentVersions),
 }));
 
 export const agentExecutionRelations = relations(agentExecutions, ({ one }) => ({
