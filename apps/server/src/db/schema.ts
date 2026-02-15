@@ -253,6 +253,7 @@ export const projectLinks = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     url: text("url").notNull(),
     label: text("label").notNull(),
+    linkType: varchar("link_type", { length: 50 }).default("generic").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [index("project_links_projectId_idx").on(table.projectId)]

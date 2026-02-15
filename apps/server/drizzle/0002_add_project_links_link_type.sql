@@ -1,0 +1,1 @@
+ALTER TABLE "project_links" ADD COLUMN "link_type" varchar(50) DEFAULT 'generic' NOT NULL;

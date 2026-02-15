@@ -15,6 +15,13 @@
       "when": 1771190654556,
       "tag": "0001_add_projects_pinned_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771190719129,
+      "tag": "0002_add_project_links_link_type",
+      "breakpoints": true
     }
   ]
 }

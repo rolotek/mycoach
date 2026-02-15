@@ -847,7 +847,31 @@ const agentRouter = t.router({
     }),
 });
 
-// Phase 8: Projects
+// Phase 8: Projects — link type detection from URL
+function detectLinkType(url: string): string {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.includes("sharepoint.com")) return "sharepoint";
+    if (
+      host.includes("docs.google.com") ||
+      host.includes("drive.google.com") ||
+      host.includes("sheets.google.com") ||
+      host.includes("slides.google.com")
+    )
+      return "google-docs";
+    if (host.includes("notion.so") || host.includes("notion.site"))
+      return "notion";
+    if (host.includes("github.com")) return "github";
+    if (host.includes("gitlab.com")) return "gitlab";
+    if (host.includes("figma.com")) return "figma";
+    if (host.includes("confluence")) return "confluence";
+    if (host.includes("dropbox.com")) return "dropbox";
+    return "generic";
+  } catch {
+    return "generic";
+  }
+}
+
 const projectRouter = t.router({
   list: protectedProcedure
     .input(
@@ -1111,12 +1135,14 @@ const projectRouter = t.router({
           )
         );
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      const linkType = detectLinkType(input.url);
       const [row] = await ctx.db
         .insert(projectLinks)
         .values({
           projectId: input.projectId,
           url: input.url,
           label: input.label,
+          linkType,
         })
         .returning();
       if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
