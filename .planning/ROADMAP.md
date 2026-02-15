@@ -100,8 +100,8 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — shadcn/ui init, design tokens, dark mode, Inter font, app shell with sidebar navigation, shared components (ChatMarkdown, PageHeader)
 - [x] 05-02-PLAN.md — Restyle auth pages (login/signup), dashboard, and settings with shadcn/ui components
-- [ ] 05-03-PLAN.md — Restyle chat interface: conversation sidebar, message list with react-markdown, input, agent cards
-- [ ] 05-04-PLAN.md — Restyle agents (list + detail), memory, and documents pages with shadcn/ui components
+- [x] 05-03-PLAN.md — Restyle chat interface: conversation sidebar, message list with react-markdown, input, agent cards
+- [x] 05-04-PLAN.md — Restyle agents (list + detail), memory, and documents pages with shadcn/ui components
 - [ ] 05-05-PLAN.md — Final consistency audit, raw class cleanup, and visual verification checkpoint
 
 ## Progress
@@ -115,4 +115,4 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
 | 3. Agent System | 0/3 | Planned | - |
 | 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
-| 5. UI Polish & Styling | 1/5 | In progress | - |
+| 5. UI Polish & Styling | 3/5 | In progress | - |
