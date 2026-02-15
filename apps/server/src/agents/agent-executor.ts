@@ -18,7 +18,8 @@ export async function executeSpecialistAgent(
   context: string | undefined,
   userId: string,
   conversationId: string | undefined,
-  agentPreferredModel?: string | null
+  agentPreferredModel?: string | null,
+  projectId?: string
 ): Promise<{
   agentName: string;
   result: string;
@@ -32,6 +33,7 @@ export async function executeSpecialistAgent(
       userId,
       agentId: agent.id,
       conversationId: conversationId ?? null,
+      projectId: projectId ?? null,
       task,
       status: "running",
     })
@@ -81,6 +83,7 @@ export async function executeSpecialistAgent(
         userId,
         type: "task",
         parentId: conversationId ?? null,
+        projectId: projectId ?? null,
         title: `${agent.name}: ${task.slice(0, 80)}${task.length > 80 ? "…" : ""}`,
         mode: "task",
         messages: [

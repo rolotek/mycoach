@@ -6,7 +6,8 @@ type UserFactRow = { category: string; fact: string };
 export function buildSystemPrompt(
   relevantContext: ContextItem[],
   userFacts: UserFactRow[],
-  mode: EffectiveMode
+  mode: EffectiveMode,
+  projectContext?: string
 ): string {
   const contextSection =
     relevantContext.length > 0
@@ -46,6 +47,7 @@ ${factsSection}
 
 ## Relevant Context
 ${contextSection}
+${projectContext ? `\n## Current Project\n${projectContext}\n` : ""}
 
 ## Guidelines
 - Reference context naturally; do not dump it verbatim.

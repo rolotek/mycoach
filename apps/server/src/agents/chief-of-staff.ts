@@ -37,6 +37,7 @@ export function buildChiefOfStaff(params: {
   ragContext: string;
   userFactsSection: string;
   mode: string;
+  projectContext?: string;
 }) {
   const dispatchTools = buildAgentTools(
     params.agents,
@@ -61,6 +62,7 @@ ${params.userFactsSection}
 
 ## Relevant Context
 ${params.ragContext}
+${params.projectContext ? `\n## Current Project\n${params.projectContext}\n` : ""}
 
 ## Guidelines
 - Reference context naturally; do not dump it verbatim.

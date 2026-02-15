@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import type { UIMessage } from "ai";
 import Link from "next/link";
 import { Menu } from "lucide-react";
@@ -16,7 +16,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatIdPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const chatId = params.id as string;
+  const projectId = searchParams.get("projectId") ?? undefined;
   const [mode, setMode] = useState("auto");
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function ChatIdPage() {
     addToolApprovalResponse,
     error: chatError,
     clearError,
-  } = useCoachingChat(chatId, mode);
+  } = useCoachingChat(chatId, mode, undefined, projectId || null);
 
   useEffect(() => {
     if (!conv?.messages || !Array.isArray(conv.messages)) return;

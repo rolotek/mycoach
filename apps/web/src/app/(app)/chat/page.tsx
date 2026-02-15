@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 
 export default function ChatPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get("projectId") ?? undefined;
   const getOrCreate = trpc.conversation.getOrCreateCoaching.useMutation({
     onSuccess: (data) => {
-      router.replace(`/chat/${data.id}`);
+      const url = projectId
+        ? `/chat/${data.id}?projectId=${encodeURIComponent(projectId)}`
+        : `/chat/${data.id}`;
+      router.replace(url);
     },
   });
 

@@ -5,7 +5,17 @@ import type { UIMessage } from "ai";
 import type { ExecutedDispatchResult } from "../agents/resolve-approved-dispatch";
 import { eq, and, desc, isNull, gte, sql } from "drizzle-orm";
 import { db } from "../db";
-import { conversations, userFacts, agents, tokenUsage, userSettings } from "../db/schema";
+import {
+  conversations,
+  userFacts,
+  agents,
+  tokenUsage,
+  userSettings,
+  projects,
+  projectDocuments,
+  projectLinks,
+  documents,
+} from "../db/schema";
 import { resolveUserModel, ApiKeyRequiredError } from "../llm/providers";
 import { calculateCostCents } from "../llm/pricing";
 import { buildChiefOfStaff } from "../agents/chief-of-staff";
@@ -180,6 +190,47 @@ async function trackUsage(params: {
   });
 }
 
+/** Load project by id and userId; return context string for system prompt, or empty if not found. */
+async function loadProjectContext(
+  projectId: string,
+  userId: string
+): Promise<string> {
+  const [project] = await db
+    .select()
+    .from(projects)
+    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
+  if (!project) return "";
+
+  const projectDocs = await db
+    .select({ filename: documents.filename })
+    .from(projectDocuments)
+    .innerJoin(documents, eq(projectDocuments.documentId, documents.id))
+    .where(
+      and(
+        eq(projectDocuments.projectId, projectId),
+        eq(documents.userId, userId)
+      )
+    );
+  const links = await db
+    .select({ url: projectLinks.url, label: projectLinks.label })
+    .from(projectLinks)
+    .where(eq(projectLinks.projectId, projectId));
+
+  const docList =
+    projectDocs.length > 0
+      ? projectDocs.map((d) => d.filename).join(", ")
+      : "None";
+  const linkList =
+    links.length > 0
+      ? links.map((l) => `${l.label}: ${l.url}`).join("\n")
+      : "None";
+
+  return `Project: ${project.name}
+Description: ${project.description ?? "(none)"}
+Attached documents: ${docList}
+Links:\n${linkList}`;
+}
+
 chatApp.post("/api/chat", async (c) => {
   const user = c.get("user");
   if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -199,15 +250,40 @@ chatApp.post("/api/chat", async (c) => {
     messages: UIMessage[];
     chatId?: string;
     mode?: ConversationMode;
+    projectId?: string;
   }>();
 
   const { messages, mode: modeOverride = "auto" } = body;
   let chatId = body.chatId;
+  const requestProjectId = body.projectId ?? null;
+
+  // Validate projectId belongs to user; load context for prompt injection
+  let projectContext = "";
+  let validProjectId: string | null = null;
+  if (requestProjectId) {
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(
+        and(
+          eq(projects.id, requestProjectId),
+          eq(projects.userId, user.id)
+        )
+      );
+    if (project) {
+      validProjectId = project.id;
+      projectContext = await loadProjectContext(project.id, user.id);
+    }
+  }
 
   if (!chatId) {
     const [conv] = await db
       .insert(conversations)
-      .values({ userId: user.id, mode: modeOverride })
+      .values({
+        userId: user.id,
+        mode: modeOverride,
+        projectId: validProjectId,
+      })
       .returning();
     chatId = conv.id;
   }
@@ -260,6 +336,18 @@ chatApp.post("/api/chat", async (c) => {
           .join("\n")
       : "No facts recorded yet.";
 
+  const [convRow] = await db
+    .select({ projectId: conversations.projectId })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.id, chatId!),
+        eq(conversations.userId, user.id)
+      )
+    );
+  const conversationProjectId =
+    convRow?.projectId ?? validProjectId ?? undefined;
+
   const userAgents = await db
     .select()
     .from(agents)
@@ -274,7 +362,8 @@ chatApp.post("/api/chat", async (c) => {
       messages,
       userAgents,
       user.id,
-      chatId ?? undefined
+      chatId ?? undefined,
+      conversationProjectId
     );
     const chiefOfStaff = buildChiefOfStaff({
       agents: userAgents,
@@ -285,6 +374,7 @@ chatApp.post("/api/chat", async (c) => {
       ragContext: contextSection,
       userFactsSection: factsSection,
       mode: effectiveMode,
+      projectContext: projectContext || undefined,
     });
     const agentStream = await createAgentUIStream({
       agent: chiefOfStaff,
@@ -326,7 +416,8 @@ chatApp.post("/api/chat", async (c) => {
   const systemPrompt = buildSystemPrompt(
     relevantContext,
     facts,
-    effectiveMode
+    effectiveMode,
+    projectContext || undefined
   );
 
   const taskTools =
