@@ -63,11 +63,12 @@ Plans:
   2. System includes working starter agent templates (contract attorney, comms writer, meeting prep, research analyst) that produce useful outputs
   3. When user makes a task request, the chief of staff suggests which agent to route to and user confirms before dispatch
   4. Agent results appear as structured content within the coaching conversation interface
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md — Agent DB schema + tRPC CRUD + starter template seeding
+- [ ] 03-02-PLAN.md — Chief-of-staff ToolLoopAgent + chat route integration
+- [ ] 03-03-PLAN.md — Agent management UI + chat approval/result rendering + verification
 
 ### Phase 4: Agent Evolution
 **Goal**: Agents improve over time through user feedback and users have full control over their agent library
@@ -91,5 +92,5 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Verification | - |
 | 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
-| 3. Agent System | 0/TBD | Not started | - |
+| 3. Agent System | 0/3 | Planned | - |
 | 4. Agent Evolution | 0/TBD | Not started | - |
