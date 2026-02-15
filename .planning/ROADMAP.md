@@ -15,7 +15,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Authentication, account isolation, and LLM provider abstraction
 - [x] **Phase 2: Coaching & Memory** - Conversational coach with persistent memory and document knowledge
 - [ ] **Phase 3: Agent System** - Dynamic agent creation, starter templates, and suggest-then-confirm delegation
-- [ ] **Phase 4: Agent Evolution** - Feedback-driven agent improvement and agent lifecycle management
+- [x] **Phase 4: Agent Evolution** - Feedback-driven agent improvement and agent lifecycle management
+- [ ] **Phase 5: UI Polish & Styling** - Comprehensive styling pass with consistent design system, responsive layouts, and polished UX
 
 ## Phase Details
 
@@ -81,18 +82,33 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — DB schema (agentFeedback, agentVersions, archivedAt) + archive filter in chat route
-- [ ] 04-02-PLAN.md — Prompt evolution pipeline + feedback/version/archive tRPC procedures
-- [ ] 04-03-PLAN.md — Feedback UI in chat + agent management page with version history and archive
+- [x] 04-01-PLAN.md — DB schema (agentFeedback, agentVersions, archivedAt) + archive filter in chat route
+- [x] 04-02-PLAN.md — Prompt evolution pipeline + feedback/version/archive tRPC procedures
+- [x] 04-03-PLAN.md — Feedback UI in chat + agent management page with version history and archive
+
+### Phase 5: UI Polish & Styling
+**Goal**: Every page has a consistent, polished design with responsive layouts and a cohesive design system
+**Depends on**: Phase 4
+**Requirements**: TBD (styling is cross-cutting)
+**Success Criteria** (what must be TRUE):
+  1. All pages use a consistent design system (colors, typography, spacing, components)
+  2. Layout is responsive and usable on mobile, tablet, and desktop
+  3. Interactive elements have proper hover, focus, and loading states
+  4. The app looks professionally designed and polished
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 --> 2 --> 3 --> 4
+Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Verification | - |
 | 2. Coaching & Memory | 4/4 | Complete | 2026-02-15 |
 | 3. Agent System | 0/3 | Planned | - |
-| 4. Agent Evolution | 0/3 | Planned | - |
+| 4. Agent Evolution | 3/3 | Complete | 2026-02-15 |
+| 5. UI Polish & Styling | 0/TBD | Not started | - |
