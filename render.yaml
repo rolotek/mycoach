@@ -1,0 +1,68 @@
+# Render Blueprint: Dashboard → New → Blueprint → connect this repo to create
+# the Postgres database and both services in one go.
+#
+# After first deploy:
+# 1. Set env vars (each service): BETTER_AUTH_URL (API URL), WEB_URL (web URL),
+#    NEXT_PUBLIC_SERVER_URL (on web service = API URL, e.g. https://mycoach-api.onrender.com).
+# 2. Run migrations once (API service Shell): cd apps/server && npx tsx scripts/enable-pgvector.ts && node scripts/db-push.js
+# 3. Optional: add OAuth (GOOGLE_*, MICROSOFT_*) or LLM keys in the dashboard.
+
+databases:
+  - name: mycoach-db
+    databaseName: mycoach
+    plan: free
+
+services:
+  # Node API (Hono + tRPC + Better Auth + chat)
+  - type: web
+    name: mycoach-api
+    runtime: node
+    region: virginia
+    plan: starter
+    buildCommand: npm install && npm run build --workspace=@mycoach/server
+    startCommand: node apps/server/dist/index.js
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - apps/server/**
+        - packages/**
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mycoach-db
+          property: connectionString
+      - key: PORT
+        value: "3001"
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: API_KEY_ENCRYPTION_KEY
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        sync: false
+      - key: WEB_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+  # Next.js frontend
+  - type: web
+    name: mycoach-web
+    runtime: node
+    region: virginia
+    plan: starter
+    buildCommand: npm install && npm run build --workspace=@mycoach/web
+    startCommand: cd apps/web && npx next start
+    buildFilter:
+      paths:
+        - apps/web/**
+        - packages/**
+        - package.json
+        - package-lock.json
+    envVars:
+      # Point to the API service; set after first deploy or use Render's service URL env
+      - key: NEXT_PUBLIC_SERVER_URL
+        sync: false
