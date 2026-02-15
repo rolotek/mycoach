@@ -3,6 +3,15 @@
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MessageSquare, Brain, FileText, Bot, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 
 export default function DashboardPage() {
   const { data: session } = authClient.useSession();
@@ -15,52 +24,39 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
+  const cards = [
+    { href: "/chat", icon: MessageSquare, title: "Start Coaching Session", description: "Begin a new conversation", primary: true },
+    { href: "/memory", icon: Brain, title: "Memory & Knowledge", description: "View and manage your facts" },
+    { href: "/documents", icon: FileText, title: "Documents", description: "Upload and manage documents" },
+    { href: "/agents", icon: Bot, title: "Agents", description: "Manage specialist agents" },
+    { href: "/settings", icon: Settings, title: "Settings", description: "LLM provider and preferences" },
+  ];
+
   return (
-    <div className="min-h-screen bg-neutral-50 p-8">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="text-2xl font-semibold text-neutral-900">
-          Welcome, {session.user?.name ?? "User"}
-        </h1>
-        <p className="mt-1 text-neutral-600">{session.user?.email}</p>
-        <div className="mt-6 flex flex-wrap gap-4">
-          <Link
-            href="/chat"
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Start Coaching Session
-          </Link>
-          <Link
-            href="/memory"
-            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-          >
-            Memory & Knowledge
-          </Link>
-          <Link
-            href="/documents"
-            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-          >
-            Documents
-          </Link>
-          <Link
-            href="/agents"
-            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-          >
-            Agents
-          </Link>
-          <Link
-            href="/settings"
-            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-          >
-            Settings
-          </Link>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="rounded border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-          >
+    <div className="space-y-6 p-4 md:p-6">
+      <PageHeader
+        title={`Welcome, ${session.user?.name ?? "User"}`}
+        description={session.user?.email ?? ""}
+        actions={
+          <Button variant="ghost" onClick={handleSignOut}>
             Sign out
-          </button>
-        </div>
+          </Button>
+        }
+      />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map(({ href, icon: Icon, title, description, primary }) => (
+          <Link key={href} href={href}>
+            <Card className="group cursor-pointer transition-colors hover:bg-accent">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Icon className="h-5 w-5" />
+                  <CardTitle className={primary ? "text-primary" : undefined}>{title}</CardTitle>
+                </div>
+                <CardDescription>{description}</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   );

@@ -1,8 +1,26 @@
 "use client";
 
 import { trpc } from "@/lib/trpc";
-import Link from "next/link";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 
 export default function SettingsPage() {
   const { data: settings, isLoading: settingsLoading } = trpc.settings.get.useQuery();
@@ -50,76 +68,70 @@ export default function SettingsPage() {
 
   if (settingsLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 p-8">
-        <div className="mx-auto max-w-2xl">Loading settings…</div>
+      <div className="space-y-4 p-4 md:p-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full max-w-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-8">
-      <div className="mx-auto max-w-2xl">
-        <Link href="/dashboard" className="text-sm text-blue-600 hover:underline">
-          ← Back to dashboard
-        </Link>
-        <h1 className="mt-4 text-2xl font-semibold text-neutral-900">Settings</h1>
-        <p className="mt-1 text-neutral-600">Choose your preferred LLM provider and model.</p>
-
-        <div className="mt-8 space-y-6 rounded-lg border border-neutral-200 bg-white p-6">
-          <div>
-            <label htmlFor="provider" className="block text-sm font-medium text-neutral-700 mb-1">
-              Provider
-            </label>
-            <select
-              id="provider"
-              value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value)}
-              className="w-full rounded border border-neutral-300 px-3 py-2 text-neutral-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              {providers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+    <div className="max-w-2xl space-y-6 p-4 md:p-6">
+      <PageHeader
+        title="Settings"
+        description="Choose your preferred LLM provider and model."
+      />
+      <Card>
+        <CardHeader>
+          <CardTitle>LLM Configuration</CardTitle>
+          <CardDescription>Select provider and model for coaching and agents.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="provider">Provider</Label>
+            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+              <SelectTrigger id="provider" className="w-full">
+                <SelectValue placeholder="Select provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {providers.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div>
-            <label htmlFor="model" className="block text-sm font-medium text-neutral-700 mb-1">
-              Model
-            </label>
-            <select
-              id="model"
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="w-full rounded border border-neutral-300 px-3 py-2 text-neutral-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-2">
+            <Label htmlFor="model">Model</Label>
+            <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <SelectTrigger id="model" className="w-full">
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saveStatus === "saving"}
-              className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {saveStatus === "saving" ? "Saving…" : "Save"}
-            </button>
-            {saveStatus === "saved" && (
-              <span className="text-sm text-green-600">Saved.</span>
-            )}
-            {saveStatus === "error" && saveError && (
-              <span className="text-sm text-red-600" role="alert">
-                {saveError}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+        </CardContent>
+        <CardFooter className="flex items-center gap-4">
+          <Button onClick={handleSave} disabled={saveStatus === "saving"}>
+            {saveStatus === "saving" ? "Saving…" : "Save"}
+          </Button>
+          {saveStatus === "saved" && (
+            <span className="text-sm text-muted-foreground">Saved.</span>
+          )}
+          {saveStatus === "error" && saveError && (
+            <span className="text-sm text-destructive" role="alert">
+              {saveError}
+            </span>
+          )}
+        </CardFooter>
+      </Card>
     </div>
   );
 }
