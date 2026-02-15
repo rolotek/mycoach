@@ -2,6 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SignupPage() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const locale = useLocale();
   const [name, setName] = useState("");
@@ -42,12 +44,12 @@ export default function SignupPage() {
         callbackURL: callbackUrl,
       });
       if (result.error) {
-        setError(result.error.message ?? "Sign up failed");
+        setError(result.error.message ?? t("signUpFailed"));
         return;
       }
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed");
+      setError(err instanceof Error ? err.message : t("signUpFailed"));
     } finally {
       setLoading(false);
     }
@@ -57,8 +59,8 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Create account</CardTitle>
-          <CardDescription>Get started with MyCoach</CardDescription>
+          <CardTitle>{t("signUpTitle")}</CardTitle>
+          <CardDescription>{t("signUpDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,7 +70,7 @@ export default function SignupPage() {
               </p>
             )}
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t("name")}</Label>
               <Input
                 id="name"
                 type="text"
@@ -79,7 +81,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -90,7 +92,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -101,15 +103,15 @@ export default function SignupPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account…" : "Sign up"}
+              {loading ? t("creatingAccount") : t("signUp")}
             </Button>
           </form>
         </CardContent>
         <CardFooter>
           <p className="w-full text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {t("hasAccount")}{" "}
             <Link href="/login" className="text-primary underline hover:no-underline">
-              Sign in
+              {t("signInLink")}
             </Link>
           </p>
         </CardFooter>

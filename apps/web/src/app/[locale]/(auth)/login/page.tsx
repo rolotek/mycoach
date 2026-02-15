@@ -2,6 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 import { Link, useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const locale = useLocale();
   const [email, setEmail] = useState("");
@@ -41,12 +43,12 @@ export default function LoginPage() {
         callbackURL: callbackUrl,
       });
       if (result.error) {
-        setError(result.error.message ?? "Login failed");
+        setError(result.error.message ?? t("loginFailed"));
         return;
       }
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : t("loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -63,8 +65,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>Enter your credentials to continue</CardDescription>
+          <CardTitle>{t("signInTitle")}</CardTitle>
+          <CardDescription>{t("signInDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,7 +76,7 @@ export default function LoginPage() {
               </p>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -85,7 +87,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -96,29 +98,29 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? t("signingIn") : t("signIn")}
             </Button>
           </form>
           <div className="relative my-6">
             <Separator />
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-              or
+              {t("or")}
             </span>
           </div>
           <div className="space-y-2">
             <Button variant="outline" className="w-full" type="button" onClick={() => handleSocial("google")}>
-              Sign in with Google
+              {t("signInWithGoogle")}
             </Button>
             <Button variant="outline" className="w-full" type="button" onClick={() => handleSocial("microsoft")}>
-              Sign in with Microsoft
+              {t("signInWithMicrosoft")}
             </Button>
           </div>
         </CardContent>
         <CardFooter>
           <p className="w-full text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {t("noAccount")}{" "}
             <Link href="/signup" className="text-primary underline hover:no-underline">
-              Sign up
+              {t("signUpLink")}
             </Link>
           </p>
         </CardFooter>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Link, usePathname } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -28,18 +29,19 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/agents", label: "Agents", icon: Bot },
-  { href: "/memory", label: "Memory", icon: Brain },
-  { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+const navKeys = [
+  { href: "/dashboard", key: "dashboard", icon: LayoutDashboard },
+  { href: "/chat", key: "chat", icon: MessageSquare },
+  { href: "/agents", key: "agents", icon: Bot },
+  { href: "/memory", key: "memory", icon: Brain },
+  { href: "/documents", key: "documents", icon: FileText },
+  { href: "/projects", key: "projects", icon: FolderKanban },
+  { href: "/settings", key: "settings", icon: Settings },
+] as const;
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const t = useTranslations("sidebar");
 
   return (
     <Sidebar>
@@ -56,19 +58,20 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {navKeys.map((item) => {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                const label = t(item.key);
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                       <Link href={item.href}>
                         <item.icon />
-                        <span>{item.label}</span>
+                        <span>{label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -85,7 +88,7 @@ export function AppSidebar() {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Sign out"
+            aria-label={t("signOut")}
             onClick={() => authClient.signOut()}
           >
             <LogOut className="h-4 w-4" />
