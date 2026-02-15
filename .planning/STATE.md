@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-14)
 ## Current Position
 
 Phase: 2 of 4 (Coaching & Memory)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-14 -- Completed 02-01 (schema + pgvector + embeddings/chunking)
+Last activity: 2026-02-14 -- Completed 02-02 (streaming chat + RAG + fact extraction)
 
-Progress: [███       ] 25%
+Progress: [█████     ] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: ~20 min
 - Total execution time: ~2.25 hours
 
@@ -28,7 +28,7 @@ Progress: [███       ] 25%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1     | 4     | 4     | ~21 min  |
-| 2     | 1     | 1     | ~15 min  |
+| 2     | 2     | 2     | ~20 min  |
 
 **Recent Trend:**
 - Last 5 plans: -
