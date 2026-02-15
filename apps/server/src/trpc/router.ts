@@ -13,6 +13,11 @@ import {
   agentExecutions,
   agentFeedback,
   agentVersions,
+  projects,
+  projectDocuments,
+  projectLinks,
+  projectMilestones,
+  projectTasks,
 } from "../db/schema";
 import { encrypt, decrypt } from "../crypto/encryption";
 import { validateApiKey } from "../llm/providers";
@@ -842,6 +847,481 @@ const agentRouter = t.router({
     }),
 });
 
+// Phase 8: Projects
+const projectRouter = t.router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        description: projects.description,
+        status: projects.status,
+        dueDate: projects.dueDate,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+      })
+      .from(projects)
+      .where(eq(projects.userId, ctx.user.id))
+      .orderBy(desc(projects.updatedAt));
+  }),
+  get: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const projectDocs = await ctx.db
+        .select({
+          id: documents.id,
+          filename: documents.filename,
+        })
+        .from(projectDocuments)
+        .innerJoin(documents, eq(projectDocuments.documentId, documents.id))
+        .where(
+          and(
+            eq(projectDocuments.projectId, input.id),
+            eq(documents.userId, ctx.user.id)
+          )
+        );
+
+      const links = await ctx.db
+        .select()
+        .from(projectLinks)
+        .where(eq(projectLinks.projectId, input.id));
+
+      const milestones = await ctx.db
+        .select()
+        .from(projectMilestones)
+        .where(eq(projectMilestones.projectId, input.id))
+        .orderBy(asc(projectMilestones.sortOrder), asc(projectMilestones.createdAt));
+
+      const tasks = await ctx.db
+        .select()
+        .from(projectTasks)
+        .where(eq(projectTasks.projectId, input.id))
+        .orderBy(asc(projectTasks.createdAt));
+
+      return {
+        ...project,
+        documents: projectDocs,
+        links,
+        milestones,
+        tasks,
+      };
+    }),
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(500),
+        description: z.string().max(2000).optional(),
+        status: z.string().max(50).optional(),
+        dueDate: z.coerce.date().nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(projects)
+        .values({
+          userId: ctx.user.id,
+          name: input.name,
+          description: input.description ?? null,
+          status: input.status ?? "active",
+          dueDate: input.dueDate ?? null,
+        })
+        .returning();
+      if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      return row;
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(500).optional(),
+        description: z.string().max(2000).nullable().optional(),
+        status: z.string().max(50).optional(),
+        dueDate: z.coerce.date().nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [existing] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+      const updates: Record<string, unknown> = { updatedAt: new Date() };
+      if (input.name !== undefined) updates.name = input.name;
+      if (input.description !== undefined) updates.description = input.description;
+      if (input.status !== undefined) updates.status = input.status;
+      if (input.dueDate !== undefined) updates.dueDate = input.dueDate;
+      const [updated] = await ctx.db
+        .update(projects)
+        .set(updates)
+        .where(
+          and(
+            eq(projects.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        )
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(projects)
+        .where(
+          and(
+            eq(projects.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      return { success: true };
+    }),
+  addDocument: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        documentId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      const [doc] = await ctx.db
+        .select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.id, input.documentId),
+            eq(documents.userId, ctx.user.id)
+          )
+        );
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found or not owned by you" });
+      await ctx.db.insert(projectDocuments).values({
+        projectId: input.projectId,
+        documentId: input.documentId,
+      }).onConflictDoNothing({
+        target: [projectDocuments.projectId, projectDocuments.documentId],
+      });
+      return { success: true };
+    }),
+  removeDocument: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        documentId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(projectDocuments)
+        .where(
+          and(
+            eq(projectDocuments.projectId, input.projectId),
+            eq(projectDocuments.documentId, input.documentId)
+          )
+        );
+      return { success: true };
+    }),
+  addLink: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        url: z.string().url(),
+        label: z.string().min(1).max(200),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      const [row] = await ctx.db
+        .insert(projectLinks)
+        .values({
+          projectId: input.projectId,
+          url: input.url,
+          label: input.label,
+        })
+        .returning();
+      if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      return row;
+    }),
+  removeLink: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        linkId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [link] = await ctx.db
+        .select()
+        .from(projectLinks)
+        .innerJoin(projects, eq(projectLinks.projectId, projects.id))
+        .where(
+          and(
+            eq(projectLinks.id, input.linkId),
+            eq(projectLinks.projectId, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!link) throw new TRPCError({ code: "NOT_FOUND" });
+      await ctx.db
+        .delete(projectLinks)
+        .where(
+          and(
+            eq(projectLinks.id, input.linkId),
+            eq(projectLinks.projectId, input.projectId)
+          )
+        );
+      return { success: true };
+    }),
+  listMilestones: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      return ctx.db
+        .select()
+        .from(projectMilestones)
+        .where(eq(projectMilestones.projectId, input.projectId))
+        .orderBy(asc(projectMilestones.sortOrder), asc(projectMilestones.createdAt));
+    }),
+  createMilestone: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        title: z.string().min(1).max(500),
+        dueDate: z.coerce.date().nullable().optional(),
+        sortOrder: z.number().int().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      const [row] = await ctx.db
+        .insert(projectMilestones)
+        .values({
+          projectId: input.projectId,
+          title: input.title,
+          dueDate: input.dueDate ?? null,
+          sortOrder: input.sortOrder ?? 0,
+        })
+        .returning();
+      if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      return row;
+    }),
+  updateMilestone: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        title: z.string().min(1).max(500).optional(),
+        dueDate: z.coerce.date().nullable().optional(),
+        sortOrder: z.number().int().optional(),
+        status: z.string().max(50).nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [milestone] = await ctx.db
+        .select()
+        .from(projectMilestones)
+        .innerJoin(projects, eq(projectMilestones.projectId, projects.id))
+        .where(
+          and(
+            eq(projectMilestones.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!milestone) throw new TRPCError({ code: "NOT_FOUND" });
+      const updates: Record<string, unknown> = {};
+      if (input.title !== undefined) updates.title = input.title;
+      if (input.dueDate !== undefined) updates.dueDate = input.dueDate;
+      if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
+      if (input.status !== undefined) updates.status = input.status;
+      const [updated] = await ctx.db
+        .update(projectMilestones)
+        .set(updates)
+        .where(eq(projectMilestones.id, input.id))
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+  deleteMilestone: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [milestone] = await ctx.db
+        .select()
+        .from(projectMilestones)
+        .innerJoin(projects, eq(projectMilestones.projectId, projects.id))
+        .where(
+          and(
+            eq(projectMilestones.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!milestone) throw new TRPCError({ code: "NOT_FOUND" });
+      await ctx.db
+        .delete(projectMilestones)
+        .where(eq(projectMilestones.id, input.id));
+      return { success: true };
+    }),
+  listTasks: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      return ctx.db
+        .select()
+        .from(projectTasks)
+        .where(eq(projectTasks.projectId, input.projectId))
+        .orderBy(asc(projectTasks.createdAt));
+    }),
+  createTask: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().uuid(),
+        title: z.string().min(1).max(500),
+        description: z.string().max(2000).optional(),
+        status: z.string().max(50).optional(),
+        dueDate: z.coerce.date().nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      const [row] = await ctx.db
+        .insert(projectTasks)
+        .values({
+          projectId: input.projectId,
+          title: input.title,
+          description: input.description ?? null,
+          status: input.status ?? "todo",
+          dueDate: input.dueDate ?? null,
+        })
+        .returning();
+      if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      return row;
+    }),
+  updateTask: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        title: z.string().min(1).max(500).optional(),
+        description: z.string().max(2000).nullable().optional(),
+        status: z.string().max(50).optional(),
+        dueDate: z.coerce.date().nullable().optional(),
+        conversationId: z.string().uuid().nullable().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [task] = await ctx.db
+        .select()
+        .from(projectTasks)
+        .innerJoin(projects, eq(projectTasks.projectId, projects.id))
+        .where(
+          and(
+            eq(projectTasks.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!task) throw new TRPCError({ code: "NOT_FOUND" });
+      const updates: Record<string, unknown> = { updatedAt: new Date() };
+      if (input.title !== undefined) updates.title = input.title;
+      if (input.description !== undefined) updates.description = input.description;
+      if (input.status !== undefined) updates.status = input.status;
+      if (input.dueDate !== undefined) updates.dueDate = input.dueDate;
+      if (input.conversationId !== undefined) updates.conversationId = input.conversationId;
+      const [updated] = await ctx.db
+        .update(projectTasks)
+        .set(updates)
+        .where(eq(projectTasks.id, input.id))
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+  deleteTask: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [task] = await ctx.db
+        .select()
+        .from(projectTasks)
+        .innerJoin(projects, eq(projectTasks.projectId, projects.id))
+        .where(
+          and(
+            eq(projectTasks.id, input.id),
+            eq(projects.userId, ctx.user.id)
+          )
+        );
+      if (!task) throw new TRPCError({ code: "NOT_FOUND" });
+      await ctx.db
+        .delete(projectTasks)
+        .where(eq(projectTasks.id, input.id));
+      return { success: true };
+    }),
+});
+
 export const appRouter = t.router({
   settings: settingsRouter,
   apiKey: apiKeyRouter,
@@ -853,6 +1333,7 @@ export const appRouter = t.router({
   agent: agentRouter,
   agentFeedback: agentFeedbackRouter,
   agentVersion: agentVersionRouter,
+  project: projectRouter,
 });
 
 export type AppRouter = typeof appRouter;
