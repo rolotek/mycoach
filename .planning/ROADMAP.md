@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 5. UI Polish & Styling | 5/9 | In progress | - |
 | 6. API Key & Usage | 5/5 | Complete | 2026-02-15 |
 | 7. Friendlier errors & i18n | 0/4 | Planned | - |
-| 8. Projects | 4/4 | Complete | 2026-02-15 |
+| 8. Projects | 4/8 | In progress | - |
 
 ### Phase 6: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
 
@@ -156,10 +156,14 @@ Plans:
 
 **Goal:** Users can create and manage projects (name, description, status, due date), attach existing documents and external links as context, define milestones and tasks, and open a chat scoped to a project so the coach and agents receive project context.
 **Depends on:** Phase 7
-**Plans:** 4 plans
+**Plans:** 8 plans
 
 Plans:
 - [x] 08-01-PLAN.md — DB schema (projects, project_documents, project_links, project_milestones, project_tasks; projectId on conversations and agentExecutions)
 - [x] 08-02-PLAN.md — tRPC project router (CRUD, documents/links/milestones/tasks)
 - [x] 08-03-PLAN.md — Chat/agent integration (optional projectId, inject project context into prompts)
 - [x] 08-04-PLAN.md — Projects list and detail UI (definition, artifacts, milestones, tasks, Open chat)
+- [ ] 08-05-PLAN.md — Pinning, smart list sort (pinned first, then recent), archived/completed filter toggle
+- [ ] 08-06-PLAN.md — Typed external links (auto-detect + icons) and direct document upload from project page
+- [ ] 08-07-PLAN.md — Section-level context (milestoneId on docs/links/conversations) and per-milestone chat threads
+- [ ] 08-08-PLAN.md — Context badge in chat UI and project threads in sidebar
