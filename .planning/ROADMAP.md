@@ -67,7 +67,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Agent DB schema + tRPC CRUD + starter template seeding
-- [ ] 03-02-PLAN.md — Chief-of-staff ToolLoopAgent + chat route integration
+- [x] 03-02-PLAN.md — Chief-of-staff ToolLoopAgent + chat route integration
 - [ ] 03-03-PLAN.md — Agent management UI + chat approval/result rendering + verification
 
 ### Phase 4: Agent Evolution
