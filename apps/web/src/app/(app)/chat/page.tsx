@@ -17,8 +17,8 @@ export default function NewChatPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <p className="text-neutral-500">
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <p className="text-muted-foreground">
         {create.isPending ? "Creating conversation..." : "Redirecting..."}
       </p>
     </div>
