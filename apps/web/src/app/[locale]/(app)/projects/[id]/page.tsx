@@ -94,6 +94,9 @@ export default function ProjectDetailPage() {
   const [milestoneTaskTitle, setMilestoneTaskTitle] = useState("");
   const [milestoneTaskDesc, setMilestoneTaskDesc] = useState("");
 
+  const t = useTranslations("projects");
+  const tCommon = useTranslations("common");
+
   if (isLoading || !project) {
     return (
       <div className="max-w-4xl space-y-6 p-4 md:p-6">
@@ -103,8 +106,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const t = useTranslations("projects");
-  const tCommon = useTranslations("common");
   const attachedDocIds = new Set(project.documents?.map((d) => d.id) ?? []);
   const availableDocs = documents?.filter((d) => !attachedDocIds.has(d.id)) ?? [];
 
