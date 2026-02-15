@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-14)
 
 **Core value:** A single AI that knows your world deeply enough to help you think through anything AND execute on your behalf
-**Current focus:** Phase 3 - Agent System (next)
+**Current focus:** Phase 4 - Agent Evolution
 
 ## Current Position
 
-Phase: 3 of 4 (Agent System)
-Plan: 3 of 3 in phase
-Status: Checkpoint (human verification)
-Last activity: 2026-02-15 -- 03-03 Tasks 1–2 done; Task 3 verification pending
+Phase: 4 of 4 (Agent Evolution)
+Plan: 1 of 3 in phase
+Status: Executing
+Last activity: 2026-02-15 -- 04-01 complete (schema + chat route archive filter)
 
-Progress: [█████████░] 90%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -58,5 +58,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 03-02-PLAN.md. Next: 03-03 (Agent management UI + approval/result in chat).
+Stopped at: Phase 4 execution. 04-01 complete. Next: 04-02 (prompt-evolver + tRPC).
 Resume file: None
