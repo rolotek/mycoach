@@ -280,6 +280,9 @@ export const projectTasks = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
+    milestoneId: uuid("milestone_id").references(() => projectMilestones.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     description: text("description"),
     status: varchar("status", { length: 50 }).default("todo").notNull(),
@@ -296,6 +299,7 @@ export const projectTasks = pgTable(
   },
   (table) => [
     index("project_tasks_projectId_idx").on(table.projectId),
+    index("project_tasks_milestoneId_idx").on(table.milestoneId),
     index("project_tasks_conversationId_idx").on(table.conversationId),
   ]
 );
@@ -614,17 +618,22 @@ export const projectLinkRelations = relations(projectLinks, ({ one }) => ({
   }),
 }));
 
-export const projectMilestoneRelations = relations(projectMilestones, ({ one }) => ({
+export const projectMilestoneRelations = relations(projectMilestones, ({ one, many }) => ({
   project: one(projects, {
     fields: [projectMilestones.projectId],
     references: [projects.id],
   }),
+  tasks: many(projectTasks),
 }));
 
 export const projectTaskRelations = relations(projectTasks, ({ one }) => ({
   project: one(projects, {
     fields: [projectTasks.projectId],
     references: [projects.id],
+  }),
+  milestone: one(projectMilestones, {
+    fields: [projectTasks.milestoneId],
+    references: [projectMilestones.id],
   }),
   conversation: one(conversations, {
     fields: [projectTasks.conversationId],

@@ -47,7 +47,7 @@ completed: 2026-02-15
 - project.get(id): single project with nested documents (id, filename), links, milestones, tasks; ownership enforced.
 - project.create/update/delete with name, description, status, dueDate.
 - addDocument/removeDocument (verify project and document belong to user); addLink/removeLink.
-- listMilestones, createMilestone, updateMilestone, deleteMilestone; listTasks, createTask, updateTask, deleteTask (all scoped to project owner).
+- listMilestones, createMilestone, updateMilestone, deleteMilestone; listTasks, createTask (optional milestoneId, validated against project), updateTask (optional milestoneId), deleteTask (all scoped to project owner). project.get returns tasks with milestoneId for UI grouping.
 - Project router mounted at appRouter.project.
 
 ## Task Commits

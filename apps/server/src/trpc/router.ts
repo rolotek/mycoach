@@ -1234,6 +1234,7 @@ const projectRouter = t.router({
     .input(
       z.object({
         projectId: z.string().uuid(),
+        milestoneId: z.string().uuid().nullable().optional(),
         title: z.string().min(1).max(500),
         description: z.string().max(2000).optional(),
         status: z.string().max(50).optional(),
@@ -1251,10 +1252,25 @@ const projectRouter = t.router({
           )
         );
       if (!project) throw new TRPCError({ code: "NOT_FOUND" });
+      if (input.milestoneId) {
+        const [milestone] = await ctx.db
+          .select()
+          .from(projectMilestones)
+          .innerJoin(projects, eq(projectMilestones.projectId, projects.id))
+          .where(
+            and(
+              eq(projectMilestones.id, input.milestoneId),
+              eq(projectMilestones.projectId, input.projectId),
+              eq(projects.userId, ctx.user.id)
+            )
+          );
+        if (!milestone) throw new TRPCError({ code: "NOT_FOUND", message: "Milestone not found or not in this project" });
+      }
       const [row] = await ctx.db
         .insert(projectTasks)
         .values({
           projectId: input.projectId,
+          milestoneId: input.milestoneId ?? null,
           title: input.title,
           description: input.description ?? null,
           status: input.status ?? "todo",
@@ -1273,6 +1289,7 @@ const projectRouter = t.router({
         status: z.string().max(50).optional(),
         dueDate: z.coerce.date().nullable().optional(),
         conversationId: z.string().uuid().nullable().optional(),
+        milestoneId: z.string().uuid().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1287,12 +1304,25 @@ const projectRouter = t.router({
           )
         );
       if (!task) throw new TRPCError({ code: "NOT_FOUND" });
+      if (input.milestoneId !== undefined && input.milestoneId !== null) {
+        const [milestone] = await ctx.db
+          .select()
+          .from(projectMilestones)
+          .where(
+            and(
+              eq(projectMilestones.id, input.milestoneId),
+              eq(projectMilestones.projectId, task.project_tasks.projectId)
+            )
+          );
+        if (!milestone) throw new TRPCError({ code: "NOT_FOUND", message: "Milestone not found or not in this project" });
+      }
       const updates: Record<string, unknown> = { updatedAt: new Date() };
       if (input.title !== undefined) updates.title = input.title;
       if (input.description !== undefined) updates.description = input.description;
       if (input.status !== undefined) updates.status = input.status;
       if (input.dueDate !== undefined) updates.dueDate = input.dueDate;
       if (input.conversationId !== undefined) updates.conversationId = input.conversationId;
+      if (input.milestoneId !== undefined) updates.milestoneId = input.milestoneId;
       const [updated] = await ctx.db
         .update(projectTasks)
         .set(updates)

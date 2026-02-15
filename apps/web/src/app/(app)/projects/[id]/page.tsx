@@ -88,6 +88,10 @@ export default function ProjectDetailPage() {
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDesc, setTaskDesc] = useState("");
+  const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
+  const [addTaskToMilestoneId, setAddTaskToMilestoneId] = useState<string | null>(null);
+  const [milestoneTaskTitle, setMilestoneTaskTitle] = useState("");
+  const [milestoneTaskDesc, setMilestoneTaskDesc] = useState("");
 
   if (isLoading || !project) {
     return (
@@ -308,38 +312,182 @@ export default function ProjectDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle>Milestones</CardTitle>
-          <CardDescription>Key deliverables or phases.</CardDescription>
+          <CardDescription>Key deliverables or phases; tasks can be linked to a milestone.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {project.milestones?.length
-              ? project.milestones.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between rounded border px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="h-4 w-4 text-muted-foreground" />
-                      <span>{m.title}</span>
-                      {m.dueDate && (
-                        <span className="text-xs text-muted-foreground">
-                          Due: {formatDate(m.dueDate)}
-                        </span>
+              ? project.milestones.map((m) => {
+                  const milestoneTasks = (project.tasks ?? []).filter(
+                    (t) => t.milestoneId === m.id
+                  );
+                  return (
+                    <li key={m.id} className="rounded border">
+                      <div className="flex items-center justify-between px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="h-4 w-4 text-muted-foreground" />
+                          <span>{m.title}</span>
+                          {m.dueDate && (
+                            <span className="text-xs text-muted-foreground">
+                              Due: {formatDate(m.dueDate)}
+                            </span>
+                          )}
+                          {m.status && (
+                            <Badge variant="secondary">{m.status}</Badge>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => deleteMilestone.mutate({ id: m.id })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {(addTaskToMilestoneId === m.id || milestoneTasks.length > 0) && (
+                        <div className="border-t bg-muted/30 px-3 py-2 space-y-1">
+                          {milestoneTasks.length > 0 && (
+                        <ul className="space-y-1">
+                          {milestoneTasks.map((t) => (
+                            <li
+                              key={t.id}
+                              className="flex items-center justify-between rounded px-2 py-1.5 text-sm"
+                            >
+                              <div>
+                                <span className="font-medium">{t.title}</span>
+                                {t.description && (
+                                  <p className="text-muted-foreground">
+                                    {t.description}
+                                  </p>
+                                )}
+                                <div className="mt-0.5 flex items-center gap-2 flex-wrap">
+                                  <Badge variant="secondary">{t.status ?? "todo"}</Badge>
+                                  {t.dueDate && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Due: {formatDate(t.dueDate)}
+                                    </span>
+                                  )}
+                                  {t.conversationId && (
+                                    <Link
+                                      href={`/chat/${t.conversationId}`}
+                                      className="text-xs text-primary hover:underline"
+                                    >
+                                      View task thread
+                                    </Link>
+                                  )}
+                                  <Select
+                                    value={t.milestoneId ?? "none"}
+                                    onValueChange={(v) =>
+                                      updateTask.mutate({
+                                        id: t.id,
+                                        milestoneId: v === "none" ? null : v,
+                                      })
+                                    }
+                                  >
+                                    <SelectTrigger className="h-7 w-[140px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">No milestone</SelectItem>
+                                      {(project.milestones ?? []).map((mil) => (
+                                        <SelectItem key={mil.id} value={mil.id}>
+                                          {mil.title}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                onClick={() => deleteTask.mutate({ id: t.id })}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                          )}
+                          {addTaskToMilestoneId === m.id ? (
+                            <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-end flex-wrap">
+                              <Input
+                                placeholder="Task title"
+                                value={milestoneTaskTitle}
+                                onChange={(e) => setMilestoneTaskTitle(e.target.value)}
+                                className="max-w-xs"
+                                autoFocus
+                              />
+                              <Input
+                                placeholder="Description (optional)"
+                                value={milestoneTaskDesc}
+                                onChange={(e) => setMilestoneTaskDesc(e.target.value)}
+                                className="max-w-xs"
+                              />
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    if (milestoneTaskTitle.trim()) {
+                                      createTask.mutate({
+                                        projectId: id,
+                                        milestoneId: m.id,
+                                        title: milestoneTaskTitle.trim(),
+                                        description: milestoneTaskDesc.trim() || undefined,
+                                      });
+                                      setMilestoneTaskTitle("");
+                                      setMilestoneTaskDesc("");
+                                      setAddTaskToMilestoneId(null);
+                                    }
+                                  }}
+                                >
+                                  <Plus className="mr-1 h-3 w-3" />
+                                  Add
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setAddTaskToMilestoneId(null);
+                                    setMilestoneTaskTitle("");
+                                    setMilestoneTaskDesc("");
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-muted-foreground"
+                              onClick={() => setAddTaskToMilestoneId(m.id)}
+                            >
+                              <Plus className="mr-1 h-3 w-3" />
+                              Add task to this milestone
+                            </Button>
+                          )}
+                        </div>
                       )}
-                      {m.status && (
-                        <Badge variant="secondary">{m.status}</Badge>
+                      {milestoneTasks.length === 0 && addTaskToMilestoneId !== m.id && (
+                        <div className="border-t bg-muted/30 px-3 py-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-muted-foreground"
+                            onClick={() => setAddTaskToMilestoneId(m.id)}
+                          >
+                            <Plus className="mr-1 h-3 w-3" />
+                            Add task to this milestone
+                          </Button>
+                        </div>
                       )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => deleteMilestone.mutate({ id: m.id })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </li>
-                ))
+                    </li>
+                  );
+                })
               : "No milestones."}
           </ul>
           <div className="flex gap-2">
@@ -379,87 +527,139 @@ export default function ProjectDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Tasks */}
+      {/* Tasks (without milestone) + Add task */}
       <Card>
         <CardHeader>
           <CardTitle>Tasks</CardTitle>
-          <CardDescription>Action items; optionally link to a task thread.</CardDescription>
+          <CardDescription>
+            Action items; assign to a milestone above or add here and optionally link to a milestone.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ul className="space-y-2">
-            {project.tasks?.length
-              ? project.tasks.map((t) => (
-                  <li
-                    key={t.id}
-                    className="flex items-center justify-between rounded border px-3 py-2"
-                  >
-                    <div>
-                      <span className="font-medium">{t.title}</span>
-                      {t.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {t.description}
-                        </p>
-                      )}
-                      <div className="mt-1 flex items-center gap-2">
-                        <Badge variant="secondary">{t.status ?? "todo"}</Badge>
-                        {t.dueDate && (
-                          <span className="text-xs text-muted-foreground">
-                            Due: {formatDate(t.dueDate)}
-                          </span>
-                        )}
-                        {t.conversationId && (
-                          <Link
-                            href={`/chat/${t.conversationId}`}
-                            className="text-xs text-primary hover:underline"
+          {(() => {
+            const tasksWithoutMilestone = (project.tasks ?? []).filter(
+              (t) => !t.milestoneId
+            );
+            return (
+              <>
+                <ul className="space-y-2">
+                  {tasksWithoutMilestone.length
+                    ? tasksWithoutMilestone.map((t) => (
+                        <li
+                          key={t.id}
+                          className="flex items-center justify-between rounded border px-3 py-2"
+                        >
+                          <div>
+                            <span className="font-medium">{t.title}</span>
+                            {t.description && (
+                              <p className="text-sm text-muted-foreground">
+                                {t.description}
+                              </p>
+                            )}
+                            <div className="mt-1 flex items-center gap-2 flex-wrap">
+                              <Badge variant="secondary">{t.status ?? "todo"}</Badge>
+                              {t.dueDate && (
+                                <span className="text-xs text-muted-foreground">
+                                  Due: {formatDate(t.dueDate)}
+                                </span>
+                              )}
+                              {t.conversationId && (
+                                <Link
+                                  href={`/chat/${t.conversationId}`}
+                                  className="text-xs text-primary hover:underline"
+                                >
+                                  View task thread
+                                </Link>
+                              )}
+                              <Select
+                                value={t.milestoneId ?? "none"}
+                                onValueChange={(v) =>
+                                  updateTask.mutate({
+                                    id: t.id,
+                                    milestoneId: v === "none" ? null : v,
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="h-7 w-[140px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No milestone</SelectItem>
+                                  {(project.milestones ?? []).map((mil) => (
+                                    <SelectItem key={mil.id} value={mil.id}>
+                                      {mil.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => deleteTask.mutate({ id: t.id })}
                           >
-                            View task thread
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => deleteTask.mutate({ id: t.id })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </li>
-                ))
-              : "No tasks."}
-          </ul>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <Input
-              placeholder="Task title"
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              className="max-w-xs"
-            />
-            <Input
-              placeholder="Description (optional)"
-              value={taskDesc}
-              onChange={(e) => setTaskDesc(e.target.value)}
-              className="max-w-xs"
-            />
-            <Button
-              size="sm"
-              onClick={() => {
-                if (taskTitle.trim()) {
-                  createTask.mutate({
-                    projectId: id,
-                    title: taskTitle.trim(),
-                    description: taskDesc.trim() || undefined,
-                  });
-                  setTaskTitle("");
-                  setTaskDesc("");
-                }
-              }}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add task
-            </Button>
-          </div>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </li>
+                      ))
+                    : "No tasks without a milestone."}
+                </ul>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end flex-wrap">
+                  <Input
+                    placeholder="Task title"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={taskDesc}
+                    onChange={(e) => setTaskDesc(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <Select
+                    value={taskMilestoneId ?? "none"}
+                    onValueChange={(v) =>
+                      setTaskMilestoneId(v === "none" ? null : v)
+                    }
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Milestone (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No milestone</SelectItem>
+                      {(project.milestones ?? []).map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (taskTitle.trim()) {
+                        createTask.mutate({
+                          projectId: id,
+                          title: taskTitle.trim(),
+                          description: taskDesc.trim() || undefined,
+                          milestoneId: taskMilestoneId ?? undefined,
+                        });
+                        setTaskTitle("");
+                        setTaskDesc("");
+                        setTaskMilestoneId(null);
+                      }
+                    }}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    Add task
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>

@@ -10,7 +10,7 @@ requires:
   - phase: 08-03
     provides: /chat?projectId=xxx for Open chat
 provides:
-  - Projects list page; project detail with definition, documents, links, milestones, tasks; Open chat for this project
+  - Projects list page; project detail with definition, documents, links, milestones (with nested tasks; add task directly to milestone via inline form), tasks (unassigned + add with optional milestone); Open chat for this project
 affects: []
 
 tech-stack:
@@ -23,7 +23,7 @@ key-files:
 
 key-decisions: []
 patterns-established:
-  - "Project detail: definition card (name, description, status, due), Documents & links card, Milestones card, Tasks card, Open chat button in header"
+  - "Project detail: definition card (name, description, status, due), Documents & links card, Milestones card (tasks nested under each milestone; 'Add task to this milestone' inline form; per-task milestone selector), Tasks card (unassigned tasks only; add task with optional milestone; per-task milestone selector), Open chat button in header"
 
 duration: 15
 completed: 2026-02-15
@@ -42,7 +42,7 @@ completed: 2026-02-15
 ## Accomplishments
 
 - Projects list page: trpc.project.list, cards with name, status, due date, link to /projects/[id]; New project dialog (name, description); Projects link in app sidebar.
-- Project detail: trpc.project.get(id); Definition section (name, description, status, due date) with inline edit and Select for status; Documents section (list attached, attach from document list via Select, remove); Links section (list with external link, add form url+label, remove); Milestones (list, add by title, delete); Tasks (list with title, description, status, due, link to task thread if conversationId, add form, delete).
+- Project detail: trpc.project.get(id); Definition section (name, description, status, due date) with inline edit and Select for status; Documents section (list attached, attach from document list via Select, remove); Links section (list with external link, add form url+label, remove); Milestones (each milestone shows its linked tasks; "Add task to this milestone" opens inline form to create a task on that milestone; add milestone by title, delete; per-task milestone dropdown to move task); Tasks section (only tasks with no milestone; add task with optional Milestone dropdown; per-task milestone selector to assign or change milestone).
 - "Open chat for this project" button in project detail header links to /chat?projectId=xxx so coach receives project context.
 
 ## Task Commits

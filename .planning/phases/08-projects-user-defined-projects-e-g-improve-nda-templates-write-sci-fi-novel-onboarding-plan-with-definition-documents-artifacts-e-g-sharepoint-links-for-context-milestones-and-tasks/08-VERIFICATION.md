@@ -15,6 +15,7 @@
 | Web sends projectId in chat body; chat page reads projectId from URL | ✓ | 08-03 use-coaching-chat, chat pages |
 | Projects list and detail UI; definition, documents, links, milestones, tasks | ✓ | 08-04 projects/page, projects/[id]/page |
 | "Open chat for this project" navigates to chat with projectId | ✓ | 08-04 Link to /chat?projectId=xxx |
+| Milestones link to tasks: project_tasks.milestoneId, tasks shown under milestones; add/update task with optional milestone; per-task milestone selector; add task directly to a milestone via "Add task to this milestone" inline form | ✓ | Schema 08-01; router 08-02; UI 08-04 |
 
 ## Human verification (recommended)
 
@@ -23,7 +24,8 @@
 - [ ] Add milestones and tasks.
 - [ ] Click "Open chat for this project" and send a message; confirm coach response references project name/context (or run with logging to confirm project context in system prompt).
 - [ ] Create a task thread from that chat and confirm task conversation has projectId (optional DB check).
+- [ ] Add a milestone, then add a task with that milestone selected (or use "Add task to this milestone" under the milestone); confirm task appears under the milestone. Move a task to another milestone or "No milestone" via the per-task dropdown.
 
 ## Issues / gaps
 
-None identified. Phase 8 implementation matches plan.
+None. Milestone–task linking (schema, API, UI) was added after initial plans and is now reflected in 08-01, 08-02, and 08-04 plan/summary updates.

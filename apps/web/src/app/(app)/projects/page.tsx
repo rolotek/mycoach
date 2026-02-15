@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/page-header";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -68,6 +69,9 @@ export default function ProjectsPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>New project</DialogTitle>
+                <DialogDescription>
+                  Add a name and optional description for your project.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>

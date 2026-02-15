@@ -10,7 +10,7 @@ provides:
   - project_documents join table (projectId, documentId)
   - project_links (projectId, url, label)
   - project_milestones (projectId, title, dueDate, sortOrder, status)
-  - project_tasks (projectId, title, description, status, dueDate, conversationId)
+  - project_tasks (projectId, optional milestoneId, title, description, status, dueDate, conversationId)
   - optional projectId on conversations and agentExecutions
 affects: phase 08 plans 02–04
 
@@ -44,7 +44,7 @@ completed: 2026-02-15
 
 - Added `projects` table with userId, name, description, status, dueDate, createdAt, updatedAt and index on userId.
 - Added `project_documents` many-to-many (projectId, documentId) with unique constraint and index.
-- Added `project_links` (projectId, url, label), `project_milestones` (projectId, title, dueDate, sortOrder, status), `project_tasks` (projectId, title, description, status, dueDate, optional conversationId) with indexes.
+- Added `project_links` (projectId, url, label), `project_milestones` (projectId, title, dueDate, sortOrder, status), `project_tasks` (projectId, optional milestoneId FK to project_milestones, title, description, status, dueDate, optional conversationId) with indexes; Drizzle relations: milestones have tasks, tasks have milestone.
 - Added optional `projectId` to `conversations` and `agentExecutions` with onDelete set null and indexes.
 - Added Drizzle relations for projects (user, projectDocuments, projectLinks, projectMilestones, projectTasks, conversations, agentExecutions) and for all new tables; updated user, conversation, document, and agentExecution relations.
 
