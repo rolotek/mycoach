@@ -13,6 +13,7 @@ import { serve } from "@hono/node-server";
 import { trpcServer } from "@hono/trpc-server";
 import { auth } from "./auth";
 import { chatApp } from "./coaching/chat-route";
+import { documentsApp } from "./documents/upload-route";
 import { sessionMiddleware } from "./middleware/auth";
 import { appRouter } from "./trpc/router";
 import { createContext } from "./trpc/context";
@@ -45,6 +46,7 @@ app.use("*", sessionMiddleware);
 
 // Chat (streaming) — after session
 app.route("", chatApp);
+app.route("", documentsApp);
 
 // tRPC
 app.use(
