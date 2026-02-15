@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4 --> 5
 | 5. UI Polish & Styling | 5/9 | In progress | - |
 | 6. API Key & Usage | 5/5 | Complete | 2026-02-15 |
 | 7. Friendlier errors & i18n | 0/? | Not planned | - |
-| 8. Projects | 0/4 | Not planned | - |
+| 8. Projects | 1/4 | In progress | - |
 
 ### Phase 6: API Key Management & Usage Tracking - Users can set individual API keys for Anthropic/OpenAI, select models, track token usage, and monitor spending against budgets using provider billing APIs
 
@@ -156,7 +156,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — DB schema (projects, project_documents, project_links, project_milestones, project_tasks; projectId on conversations and agentExecutions)
+- [x] 08-01-PLAN.md — DB schema (projects, project_documents, project_links, project_milestones, project_tasks; projectId on conversations and agentExecutions)
 - [ ] 08-02-PLAN.md — tRPC project router (CRUD, documents/links/milestones/tasks)
 - [ ] 08-03-PLAN.md — Chat/agent integration (optional projectId, inject project context into prompts)
 - [ ] 08-04-PLAN.md — Projects list and detail UI (definition, artifacts, milestones, tasks, Open chat)

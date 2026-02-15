@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-14)
 
 **Core value:** A single AI that knows your world deeply enough to help you think through anything AND execute on your behalf
-**Current focus:** Phases 1–5 and Phase 6 (API Key & Usage) complete
+**Current focus:** Phase 8 (Projects) in progress
 
 ## Current Position
 
-Phase: 6 (API Key Management & Usage Tracking)
-Plan: 5 of 5 in phase
-Status: Complete
-Last activity: 2026-02-15 -- Phase 6 e2e spec passed (9/9); phase marked done in ROADMAP and STATE
+Phase: 8 (Projects)
+Plan: 1 of 4 in phase
+Status: In progress
+Last activity: 2026-02-15 -- 08-01 DB schema complete; next 08-02 tRPC router
 
-Progress: [██████████] 100%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -36,6 +36,7 @@ Progress: [██████████] 100%
 
 *Updated after each plan completion*
 | Phase 05 P01 | 15 | 2 tasks | 23 files |
+| Phase 08 P01 | 8 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
