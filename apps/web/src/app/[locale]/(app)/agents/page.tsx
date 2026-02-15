@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -103,20 +104,23 @@ export default function AgentsPage() {
     }
   };
 
+  const t = useTranslations("agents");
+  const tCommon = useTranslations("common");
+
   const handleDelete = (id: string) => {
-    if (!window.confirm("Delete this agent?")) return;
+    if (!window.confirm(t("deleteConfirm"))) return;
     deleteMut.mutate({ id });
   };
 
   return (
     <div className="max-w-5xl space-y-6 p-4 md:p-6">
       <PageHeader
-        title="Agents"
-        description="Your specialist agent library"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
-            Create Agent
+            {t("createAgent")}
           </Button>
         }
       />
@@ -124,50 +128,50 @@ export default function AgentsPage() {
       <Dialog open={showForm} onOpenChange={(open) => !open && resetForm()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Agent" : "New Agent"}</DialogTitle>
+            <DialogTitle>{editingId ? t("editAgent") : t("newAgent")}</DialogTitle>
             <DialogDescription>
-              {editingId ? "Update agent details." : "Create a new specialist agent."}
+              {editingId ? t("editAgentDesc") : t("newAgentDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="agent-name">Name</Label>
+              <Label htmlFor="agent-name">{t("name")}</Label>
               <Input
                 id="agent-name"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 maxLength={100}
-                placeholder="e.g. Contract Attorney"
+                placeholder={t("placeholderName")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="agent-desc">Description</Label>
+              <Label htmlFor="agent-desc">{t("descriptionLabel")}</Label>
               <Textarea
                 id="agent-desc"
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 maxLength={500}
                 rows={2}
-                placeholder="What this agent does"
+                placeholder={t("placeholderDesc")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="agent-prompt">System prompt</Label>
+              <Label htmlFor="agent-prompt">{t("systemPrompt")}</Label>
               <Textarea
                 id="agent-prompt"
                 value={formSystemPrompt}
                 onChange={(e) => setFormSystemPrompt(e.target.value)}
                 rows={6}
-                placeholder="Instructions for the agent"
+                placeholder={t("placeholderPrompt")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="agent-icon">Icon (optional)</Label>
+              <Label htmlFor="agent-icon">{t("iconOptional")}</Label>
               <Input
                 id="agent-icon"
                 value={formIcon}
                 onChange={(e) => setFormIcon(e.target.value)}
-                placeholder="e.g. 📄 or scales"
+                placeholder={t("placeholderIcon")}
               />
             </div>
           </div>
@@ -182,10 +186,10 @@ export default function AgentsPage() {
                 updateMut.isPending
               }
             >
-              Save
+              {tCommon("save")}
             </Button>
             <Button variant="outline" onClick={resetForm}>
-              Cancel
+              {tCommon("cancel")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -207,7 +211,7 @@ export default function AgentsPage() {
         </div>
       ) : !agents?.length ? (
         <p className="text-center text-muted-foreground">
-          No agents yet. Create one or your starter templates will appear when you open this page.
+          {t("noAgentsYet")}
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -224,8 +228,8 @@ export default function AgentsPage() {
                       {a.name}
                     </Link>
                   </CardTitle>
-                  {a.isStarter && <Badge variant="secondary">Starter</Badge>}
-                  {a.archivedAt && <Badge variant="outline">Archived</Badge>}
+                  {a.isStarter && <Badge variant="secondary">{t("starter")}</Badge>}
+                  {a.archivedAt && <Badge variant="outline">{t("archived")}</Badge>}
                 </div>
                 <CardDescription className="line-clamp-2">{a.description}</CardDescription>
               </CardHeader>
@@ -233,20 +237,20 @@ export default function AgentsPage() {
                 {!a.archivedAt && (
                   <>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
-                      Edit
+                      {tCommon("edit")}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => archiveMut.mutate({ id: a.id })}>
-                      Archive
+                      {t("archive")}
                     </Button>
                   </>
                 )}
                 {a.archivedAt && (
                   <Button variant="ghost" size="sm" onClick={() => unarchiveMut.mutate({ id: a.id })}>
-                    Unarchive
+                    {t("unarchive")}
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/agents/${a.id}`}>View History</Link>
+                  <Link href={`/agents/${a.id}`}>{t("viewHistory")}</Link>
                 </Button>
                 {!a.archivedAt && (
                   <Button
@@ -255,7 +259,7 @@ export default function AgentsPage() {
                     className="text-destructive hover:text-destructive"
                     onClick={() => handleDelete(a.id)}
                   >
-                    Delete
+                    {tCommon("delete")}
                   </Button>
                 )}
               </CardFooter>

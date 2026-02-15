@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ArrowLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -60,18 +61,21 @@ export default function AgentDetailPage() {
   const positiveCount = feedbackList?.filter((f) => f.rating === "positive").length ?? 0;
   const negativeCount = feedbackList?.filter((f) => f.rating === "negative").length ?? 0;
 
+  const t = useTranslations("agents");
+  const tCommon = useTranslations("common");
+
   if (!agent) {
     return (
       <div className="max-w-4xl space-y-6 p-4 md:p-6">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/agents">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Agents
+            {t("backToAgents")}
           </Link>
         </Button>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-muted-foreground">Agent not found or loading.</p>
+            <p className="text-muted-foreground">{t("agentNotFound")}</p>
           </CardContent>
         </Card>
       </div>
@@ -83,7 +87,7 @@ export default function AgentDetailPage() {
       <Button variant="ghost" size="sm" asChild>
         <Link href="/agents">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Agents
+          {t("backToAgents")}
         </Link>
       </Button>
 
@@ -92,17 +96,16 @@ export default function AgentDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <AgentIcon icon={agent.icon} size="h-6 w-6" />
             <CardTitle className="text-xl">{agent.name}</CardTitle>
-            {agent.isStarter && <Badge variant="secondary">Starter</Badge>}
-            {agent.archivedAt && <Badge variant="outline">Archived</Badge>}
+            {agent.isStarter && <Badge variant="secondary">{t("starter")}</Badge>}
+            {agent.archivedAt && <Badge variant="outline">{t("archived")}</Badge>}
           </div>
           <CardDescription>{agent.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>Preferred model</Label>
+            <Label>{t("preferredModel")}</Label>
             <p className="text-xs text-muted-foreground">
-              Override the default model for this agent. Leave as &quot;Use Default&quot; to use your
-              global setting.
+              {t("preferredModelHelp")}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <Select
@@ -111,10 +114,10 @@ export default function AgentDetailPage() {
                 disabled={!!agent.archivedAt}
               >
                 <SelectTrigger className="w-full max-w-sm">
-                  <SelectValue placeholder="Use Default" />
+                  <SelectValue placeholder={t("useDefault")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={PREFERRED_MODEL_DEFAULT}>Use Default</SelectItem>
+                  <SelectItem value={PREFERRED_MODEL_DEFAULT}>{t("useDefault")}</SelectItem>
                   {providers.map((p) =>
                     p.models.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
@@ -134,7 +137,7 @@ export default function AgentDetailPage() {
                 }
                 disabled={updateAgentMut.isPending || !!agent.archivedAt}
               >
-                {updateAgentMut.isPending ? "Saving…" : "Save"}
+                {updateAgentMut.isPending ? tCommon("saving") : tCommon("save")}
               </Button>
             </div>
           </div>
@@ -156,7 +159,7 @@ export default function AgentDetailPage() {
                   <Skeleton className="h-24 w-full" />
                 </div>
               ) : !versions?.length ? (
-                <p className="mt-4 text-sm text-muted-foreground">No version history yet</p>
+                <p className="mt-4 text-sm text-muted-foreground">{t("noVersionHistory")}</p>
               ) : (
                 <div className="mt-4 space-y-3">
                   {versions.map((v) => (
@@ -167,6 +170,8 @@ export default function AgentDetailPage() {
                         revertMut.mutate({ agentId: id, versionId: v.id })
                       }
                       isReverting={revertMut.isPending}
+                      t={t}
+                      tCommon={tCommon}
                     />
                   ))}
                 </div>
@@ -174,8 +179,11 @@ export default function AgentDetailPage() {
             </TabsContent>
             <TabsContent value="feedback">
               <p className="mt-4 text-sm text-muted-foreground">
-                Total: {feedbackList?.length ?? 0} · Positive: {positiveCount} ·
-                Negative: {negativeCount}
+                {t("feedbackTotal", {
+                  total: feedbackList?.length ?? 0,
+                  positive: positiveCount,
+                  negative: negativeCount,
+                })}
               </p>
             </TabsContent>
           </Tabs>
@@ -189,6 +197,8 @@ function VersionCard({
   version,
   onRevert,
   isReverting,
+  t,
+  tCommon,
 }: {
   version: {
     id: string;
@@ -200,6 +210,8 @@ function VersionCard({
   };
   onRevert: () => void;
   isReverting: boolean;
+  t: (key: string, values?: Record<string, number>) => string;
+  tCommon: (key: string) => string;
 }) {
   const [showPrompt, setShowPrompt] = useState(false);
 
@@ -208,7 +220,7 @@ function VersionCard({
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">Version {version.version}</span>
+            <span className="font-medium">{t("version", { number: version.version })}</span>
             <Badge
               variant={
                 version.changeSource === "evolution" ? "default" : "secondary"
@@ -226,7 +238,7 @@ function VersionCard({
             onClick={onRevert}
             disabled={isReverting}
           >
-            Revert to this version
+            {t("revertToVersion")}
           </Button>
         </div>
         {version.changeSummary && (
@@ -238,7 +250,7 @@ function VersionCard({
           className="mt-2"
           onClick={() => setShowPrompt((s) => !s)}
         >
-          {showPrompt ? "Hide prompt" : "Show prompt"}
+          {showPrompt ? t("hidePrompt") : t("showPrompt")}
         </Button>
         {showPrompt && (
           <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-xs">

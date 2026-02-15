@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -18,12 +19,13 @@ export function AgentSummaryCard({
   task: string;
   taskThreadId?: string;
 }) {
+  const t = useTranslations("chat");
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{agentName}</Badge>
-          <span className="text-xs text-muted-foreground">completed</span>
+          <span className="text-xs text-muted-foreground">{t("completed")}</span>
         </div>
         <p className="mt-1 truncate text-sm text-muted-foreground">{task}</p>
       </div>
@@ -32,7 +34,7 @@ export function AgentSummaryCard({
           href={`/chat/${taskThreadId}`}
           className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
         >
-          View result
+          {t("viewResult")}
           <ExternalLink className="h-3 w-3" />
         </Link>
       )}
@@ -79,10 +81,11 @@ export function FeedbackButtons({
     );
   };
 
+  const t = useTranslations("chat");
   if (submitted === "positive") {
     return (
       <div className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">
-        Thanks for the feedback
+        {t("thanksForFeedback")}
       </div>
     );
   }
@@ -90,14 +93,14 @@ export function FeedbackButtons({
     return (
       <div className="mt-2 border-t border-border pt-2">
         <Textarea
-          placeholder="What should have been different?"
+          placeholder={t("whatShouldBeDifferent")}
           value={correctionText}
           onChange={(e) => setCorrectionText(e.target.value)}
           className="mb-2 min-h-[60px]"
           rows={2}
         />
         <Button size="sm" variant="secondary" onClick={submitCorrection}>
-          Submit correction
+          {t("submitCorrection")}
         </Button>
       </div>
     );
@@ -105,7 +108,7 @@ export function FeedbackButtons({
   if (submitted === "negative" && !showCorrection) {
     return (
       <div className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">
-        Noted — this will help improve future results
+        {t("notedImprove")}
       </div>
     );
   }
@@ -144,10 +147,11 @@ export function AgentResultCard({
   executionId?: string;
   agentId?: string;
 }) {
+  const tChat = useTranslations("chat");
   return (
     <div className="rounded-lg border border-border border-l-4 border-l-primary bg-card px-4 py-3 shadow-sm">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-foreground">Result from</span>
+        <span className="text-sm font-medium text-foreground">{tChat("resultFrom")}</span>
         <Badge variant="secondary">{agentName}</Badge>
       </div>
       <div className="mt-2 break-words text-sm text-foreground">
@@ -161,9 +165,10 @@ export function AgentResultCard({
 }
 
 export function AgentDeniedCard() {
+  const t = useTranslations("chat");
   return (
     <div className="rounded-lg border border-border bg-muted px-4 py-2 text-sm text-muted-foreground">
-      Agent dispatch was declined
+      {t("agentDeclined")}
     </div>
   );
 }

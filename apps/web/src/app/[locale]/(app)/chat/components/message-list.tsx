@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { AgentApprovalCard } from "./agent-approval";
 import { AgentResultCard, AgentDeniedCard, AgentSummaryCard } from "./agent-result";
@@ -62,6 +63,7 @@ export function MessageList({
     reason?: string;
   }) => void;
 }) {
+  const t = useTranslations("chat");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export function MessageList({
   if (messages.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        Start a conversation with your coach
+        {t("startConversation")}
       </div>
     );
   }
@@ -194,7 +196,7 @@ export function MessageList({
                 }`}
               >
                 <div className="text-xs font-medium opacity-80">
-                  {isUser ? "You" : "Coach"}
+                  {isUser ? t("you") : t("coach")}
                 </div>
                 <div className="mt-1 whitespace-pre-wrap break-words">
                   <ChatMarkdown content={text} />
@@ -205,24 +207,21 @@ export function MessageList({
         );
       })}
       {(status === "submitted" || status === "streaming") && (
-        <div className="flex justify-start">
+        <div className="flex justify-start" aria-label={t("thinking")}>
           <div className="rounded-lg bg-muted px-4 py-2 text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <span className="text-sm">Thinking…</span>
-              <span className="flex gap-1">
-                <span
-                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
-                  style={{ animationDelay: "0ms" }}
-                />
-                <span
-                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
-                  style={{ animationDelay: "150ms" }}
-                />
-                <span
-                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
-                  style={{ animationDelay: "300ms" }}
-                />
-              </span>
+            <span className="flex items-center gap-1">
+              <span
+                className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60"
+                style={{ animationDelay: "0ms" }}
+              />
+              <span
+                className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60"
+                style={{ animationDelay: "150ms" }}
+              />
+              <span
+                className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60"
+                style={{ animationDelay: "300ms" }}
+              />
             </span>
           </div>
         </div>

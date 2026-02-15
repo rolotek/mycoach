@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   ArrowLeft,
@@ -102,6 +103,8 @@ export default function ProjectDetailPage() {
     );
   }
 
+  const t = useTranslations("projects");
+  const tCommon = useTranslations("common");
   const attachedDocIds = new Set(project.documents?.map((d) => d.id) ?? []);
   const availableDocs = documents?.filter((d) => !attachedDocIds.has(d.id)) ?? [];
 
@@ -111,13 +114,13 @@ export default function ProjectDetailPage() {
         <Button variant="ghost" size="sm" asChild>
           <Link href="/projects">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Projects
+            {t("backToProjects")}
           </Link>
         </Button>
         <Button asChild>
           <Link href={`/chat?projectId=${id}`}>
             <MessageSquare className="mr-2 h-4 w-4" />
-            Open chat for this project
+            {t("openChatForProject")}
           </Link>
         </Button>
       </div>
@@ -125,12 +128,12 @@ export default function ProjectDetailPage() {
       {/* Definition */}
       <Card>
         <CardHeader>
-          <CardTitle>Definition</CardTitle>
-          <CardDescription>Name, description, status, and due date.</CardDescription>
+          <CardTitle>{t("definition")}</CardTitle>
+          <CardDescription>{t("definitionDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label>Name</Label>
+            <Label>{t("name")}</Label>
             <Input
               defaultValue={project.name}
               onBlur={(e) => {
@@ -141,7 +144,7 @@ export default function ProjectDetailPage() {
             />
           </div>
           <div className="grid gap-2">
-            <Label>Description</Label>
+            <Label>{t("descriptionLabel")}</Label>
             <Textarea
               defaultValue={project.description ?? ""}
               rows={3}
@@ -154,7 +157,7 @@ export default function ProjectDetailPage() {
           </div>
           <div className="flex gap-4">
             <div className="grid gap-2">
-              <Label>Status</Label>
+              <Label>{t("status")}</Label>
               <Select
                 value={project.status ?? "active"}
                 onValueChange={(v) => updateProject.mutate({ id, status: v })}
@@ -163,14 +166,14 @@ export default function ProjectDetailPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="active">{t("active")}</SelectItem>
+                  <SelectItem value="completed">{t("completed")}</SelectItem>
+                  <SelectItem value="archived">{t("archived")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Due date</Label>
+              <Label>{t("dueDate")}</Label>
               <Input
                 type="date"
                 value={
@@ -193,14 +196,12 @@ export default function ProjectDetailPage() {
       {/* Documents & Links */}
       <Card>
         <CardHeader>
-          <CardTitle>Documents & links</CardTitle>
-          <CardDescription>
-            Attach existing documents or add external links (e.g. SharePoint).
-          </CardDescription>
+          <CardTitle>{t("documentsAndLinks")}</CardTitle>
+          <CardDescription>{t("documentsAndLinksDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <Label className="mb-2 block">Attached documents</Label>
+            <Label className="mb-2 block">{t("attachedDocuments")}</Label>
             <ul className="space-y-1">
               {project.documents?.length
                 ? project.documents.map((d) => (
@@ -221,7 +222,7 @@ export default function ProjectDetailPage() {
                       </Button>
                     </li>
                   ))
-                : "None attached."}
+                : t("noneAttached")}
             </ul>
             {availableDocs.length > 0 && (
               <Select
@@ -230,7 +231,7 @@ export default function ProjectDetailPage() {
                 }}
               >
                 <SelectTrigger className="mt-2 w-full max-w-xs">
-                  <SelectValue placeholder="Attach document..." />
+                  <SelectValue placeholder={t("attachDocument")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableDocs.map((doc) => (
@@ -243,7 +244,7 @@ export default function ProjectDetailPage() {
             )}
           </div>
           <div>
-            <Label className="mb-2 block">Links</Label>
+            <Label className="mb-2 block">{t("links")}</Label>
             <ul className="space-y-1">
               {project.links?.length
                 ? project.links.map((l) => (
@@ -272,17 +273,17 @@ export default function ProjectDetailPage() {
                       </Button>
                     </li>
                   ))
-                : "No links."}
+                : t("noLinks")}
             </ul>
             <div className="mt-2 flex gap-2">
               <Input
-                placeholder="Label"
+                placeholder={t("label")}
                 value={linkLabel}
                 onChange={(e) => setLinkLabel(e.target.value)}
                 className="max-w-[140px]"
               />
               <Input
-                placeholder="https://..."
+                placeholder={t("linkUrlPlaceholder")}
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
                 className="flex-1"
@@ -301,7 +302,7 @@ export default function ProjectDetailPage() {
                   }
                 }}
               >
-                Add link
+                {t("addLink")}
               </Button>
             </div>
           </div>
@@ -311,8 +312,8 @@ export default function ProjectDetailPage() {
       {/* Milestones */}
       <Card>
         <CardHeader>
-          <CardTitle>Milestones</CardTitle>
-          <CardDescription>Key deliverables or phases; tasks can be linked to a milestone.</CardDescription>
+          <CardTitle>{t("milestones")}</CardTitle>
+          <CardDescription>{t("milestonesDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <ul className="space-y-4">
@@ -349,38 +350,38 @@ export default function ProjectDetailPage() {
                         <div className="border-t bg-muted/30 px-3 py-2 space-y-1">
                           {milestoneTasks.length > 0 && (
                         <ul className="space-y-1">
-                          {milestoneTasks.map((t) => (
+                          {milestoneTasks.map((task) => (
                             <li
-                              key={t.id}
+                              key={task.id}
                               className="flex items-center justify-between rounded px-2 py-1.5 text-sm"
                             >
                               <div>
-                                <span className="font-medium">{t.title}</span>
-                                {t.description && (
+                                <span className="font-medium">{task.title}</span>
+                                {task.description && (
                                   <p className="text-muted-foreground">
-                                    {t.description}
+                                    {task.description}
                                   </p>
                                 )}
                                 <div className="mt-0.5 flex items-center gap-2 flex-wrap">
-                                  <Badge variant="secondary">{t.status ?? "todo"}</Badge>
-                                  {t.dueDate && (
+                                  <Badge variant="secondary">{task.status ?? "todo"}</Badge>
+                                  {task.dueDate && (
                                     <span className="text-xs text-muted-foreground">
-                                      Due: {formatDate(t.dueDate)}
+                                      Due: {formatDate(task.dueDate)}
                                     </span>
                                   )}
-                                  {t.conversationId && (
+                                  {task.conversationId && (
                                     <Link
-                                      href={`/chat/${t.conversationId}`}
+                                      href={`/chat/${task.conversationId}`}
                                       className="text-xs text-primary hover:underline"
                                     >
-                                      View task thread
+                                      {t("viewTaskThread")}
                                     </Link>
                                   )}
                                   <Select
-                                    value={t.milestoneId ?? "none"}
+                                    value={task.milestoneId ?? "none"}
                                     onValueChange={(v) =>
                                       updateTask.mutate({
-                                        id: t.id,
+                                        id: task.id,
                                         milestoneId: v === "none" ? null : v,
                                       })
                                     }
@@ -389,7 +390,7 @@ export default function ProjectDetailPage() {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="none">No milestone</SelectItem>
+                                      <SelectItem value="none">{t("noMilestone")}</SelectItem>
                                       {(project.milestones ?? []).map((mil) => (
                                         <SelectItem key={mil.id} value={mil.id}>
                                           {mil.title}
@@ -403,7 +404,7 @@ export default function ProjectDetailPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-destructive"
-                                onClick={() => deleteTask.mutate({ id: t.id })}
+                                onClick={() => deleteTask.mutate({ id: task.id })}
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
@@ -414,14 +415,14 @@ export default function ProjectDetailPage() {
                           {addTaskToMilestoneId === m.id ? (
                             <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-end flex-wrap">
                               <Input
-                                placeholder="Task title"
+                                placeholder={t("taskTitle")}
                                 value={milestoneTaskTitle}
                                 onChange={(e) => setMilestoneTaskTitle(e.target.value)}
                                 className="max-w-xs"
                                 autoFocus
                               />
                               <Input
-                                placeholder="Description (optional)"
+                                placeholder={t("descriptionOptionalPlaceholder")}
                                 value={milestoneTaskDesc}
                                 onChange={(e) => setMilestoneTaskDesc(e.target.value)}
                                 className="max-w-xs"
@@ -444,7 +445,7 @@ export default function ProjectDetailPage() {
                                   }}
                                 >
                                   <Plus className="mr-1 h-3 w-3" />
-                                  Add
+                                  {t("add")}
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -455,7 +456,7 @@ export default function ProjectDetailPage() {
                                     setMilestoneTaskDesc("");
                                   }}
                                 >
-                                  Cancel
+                                  {tCommon("cancel")}
                                 </Button>
                               </div>
                             </div>
@@ -467,7 +468,7 @@ export default function ProjectDetailPage() {
                               onClick={() => setAddTaskToMilestoneId(m.id)}
                             >
                               <Plus className="mr-1 h-3 w-3" />
-                              Add task to this milestone
+                              {t("addTaskToMilestone")}
                             </Button>
                           )}
                         </div>
@@ -481,18 +482,18 @@ export default function ProjectDetailPage() {
                             onClick={() => setAddTaskToMilestoneId(m.id)}
                           >
                             <Plus className="mr-1 h-3 w-3" />
-                            Add task to this milestone
+                            {t("addTaskToMilestone")}
                           </Button>
                         </div>
                       )}
                     </li>
                   );
                 })
-              : "No milestones."}
+              : t("noMilestones")}
           </ul>
           <div className="flex gap-2">
             <Input
-              placeholder="Milestone title"
+              placeholder={t("milestoneTitle")}
               value={milestoneTitle}
               onChange={(e) => setMilestoneTitle(e.target.value)}
               onKeyDown={(e) => {
@@ -521,7 +522,7 @@ export default function ProjectDetailPage() {
               }}
             >
               <Plus className="mr-1 h-4 w-4" />
-              Add
+              {t("add")}
             </Button>
           </div>
         </CardContent>
@@ -530,10 +531,8 @@ export default function ProjectDetailPage() {
       {/* Tasks (without milestone) + Add task */}
       <Card>
         <CardHeader>
-          <CardTitle>Tasks</CardTitle>
-          <CardDescription>
-            Action items; assign to a milestone above or add here and optionally link to a milestone.
-          </CardDescription>
+          <CardTitle>{t("tasks")}</CardTitle>
+          <CardDescription>{t("tasksDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {(() => {
@@ -544,38 +543,38 @@ export default function ProjectDetailPage() {
               <>
                 <ul className="space-y-2">
                   {tasksWithoutMilestone.length
-                    ? tasksWithoutMilestone.map((t) => (
+                    ? tasksWithoutMilestone.map((task) => (
                         <li
-                          key={t.id}
+                          key={task.id}
                           className="flex items-center justify-between rounded border px-3 py-2"
                         >
                           <div>
-                            <span className="font-medium">{t.title}</span>
-                            {t.description && (
+                            <span className="font-medium">{task.title}</span>
+                            {task.description && (
                               <p className="text-sm text-muted-foreground">
-                                {t.description}
+                                {task.description}
                               </p>
                             )}
                             <div className="mt-1 flex items-center gap-2 flex-wrap">
-                              <Badge variant="secondary">{t.status ?? "todo"}</Badge>
-                              {t.dueDate && (
+                              <Badge variant="secondary">{task.status ?? "todo"}</Badge>
+                              {task.dueDate && (
                                 <span className="text-xs text-muted-foreground">
-                                  Due: {formatDate(t.dueDate)}
+                                  Due: {formatDate(task.dueDate)}
                                 </span>
                               )}
-                              {t.conversationId && (
+                              {task.conversationId && (
                                 <Link
-                                  href={`/chat/${t.conversationId}`}
+                                  href={`/chat/${task.conversationId}`}
                                   className="text-xs text-primary hover:underline"
                                 >
-                                  View task thread
+                                  {t("viewTaskThread")}
                                 </Link>
                               )}
                               <Select
-                                value={t.milestoneId ?? "none"}
+                                value={task.milestoneId ?? "none"}
                                 onValueChange={(v) =>
                                   updateTask.mutate({
-                                    id: t.id,
+                                    id: task.id,
                                     milestoneId: v === "none" ? null : v,
                                   })
                                 }
@@ -584,7 +583,7 @@ export default function ProjectDetailPage() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">No milestone</SelectItem>
+                                  <SelectItem value="none">{t("noMilestone")}</SelectItem>
                                   {(project.milestones ?? []).map((mil) => (
                                     <SelectItem key={mil.id} value={mil.id}>
                                       {mil.title}
@@ -598,23 +597,23 @@ export default function ProjectDetailPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-destructive"
-                            onClick={() => deleteTask.mutate({ id: t.id })}
+                            onClick={() => deleteTask.mutate({ id: task.id })}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </li>
                       ))
-                    : "No tasks without a milestone."}
+                    : t("noTasksWithoutMilestone")}
                 </ul>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end flex-wrap">
                   <Input
-                    placeholder="Task title"
+                    placeholder={t("taskTitle")}
                     value={taskTitle}
                     onChange={(e) => setTaskTitle(e.target.value)}
                     className="max-w-xs"
                   />
                   <Input
-                    placeholder="Description (optional)"
+                    placeholder={t("descriptionOptionalPlaceholder")}
                     value={taskDesc}
                     onChange={(e) => setTaskDesc(e.target.value)}
                     className="max-w-xs"
@@ -626,10 +625,10 @@ export default function ProjectDetailPage() {
                     }
                   >
                     <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Milestone (optional)" />
+                      <SelectValue placeholder={t("milestoneOptional")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No milestone</SelectItem>
+                      <SelectItem value="none">{t("noMilestone")}</SelectItem>
                       {(project.milestones ?? []).map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.title}
@@ -654,7 +653,7 @@ export default function ProjectDetailPage() {
                     }}
                   >
                     <Plus className="mr-1 h-4 w-4" />
-                    Add task
+                    {t("addTask")}
                   </Button>
                 </div>
               </>

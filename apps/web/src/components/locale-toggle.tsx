@@ -2,6 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
 import { Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,15 +38,14 @@ export function LocaleToggle() {
   const pathname = usePathname();
 
   function handleSelect(value: string | "system") {
+    const base = pathname?.startsWith("/") ? pathname : `/${pathname ?? ""}`;
     if (value === "system") {
       clearLocaleCookie();
-      window.location.href = pathname || "/";
+      window.location.href = `/${routing.defaultLocale}${base || ""}`;
       return;
     }
     setLocaleCookie(value);
-    const base = pathname?.startsWith("/") ? pathname : `/${pathname ?? ""}`;
-    const newPath = `/${value}${base}`;
-    window.location.href = newPath;
+    window.location.href = `/${value}${base}`;
   }
 
   const currentLabel =

@@ -170,7 +170,7 @@ export async function checkAndEvolveAgent(
     const modelId =
       process.env.PROMPT_EVOLUTION_MODEL ??
       process.env.COACH_FACT_MODEL ??
-      "ollama:llama3.1";
+      "ollama:llama3.1:8b";
     const revision = await evolveAgentPrompt(
       agentId,
       agent.systemPrompt,

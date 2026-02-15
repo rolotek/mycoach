@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { streamText, createAgentUIStream, createUIMessageStreamResponse } from "ai";
 import { convertToModelMessages, tool } from "ai";
-import type { UIMessage } from "ai";
+import type { UIMessage, UIMessageChunk } from "ai";
 import type { ExecutedDispatchResult } from "../agents/resolve-approved-dispatch";
 import { eq, and, desc, isNull, gte, sql } from "drizzle-orm";
 import { db } from "../db";
@@ -17,6 +17,32 @@ import {
   documents,
 } from "../db/schema";
 import { resolveUserModel, ApiKeyRequiredError } from "../llm/providers";
+
+/** Error keys for client-side localization (errors.* in messages) */
+const ERROR_KEYS = {
+  modelNotFound: "errors.modelNotFound",
+  apiKeyMissing: "errors.apiKeyMissing",
+  apiKeyInvalid: "errors.apiKeyInvalid",
+  rateLimit: "errors.rateLimit",
+  generic: "errors.generic",
+} as const;
+
+type ErrorPayload = { errorKey?: string; message: string };
+
+/**
+ * Classify known errors into a stable key for client-side localization.
+ * Returns { errorKey, message } so client can show t(errorKey) or fallback to message.
+ */
+function getErrorPayload(error: unknown): ErrorPayload {
+  const err = error as { message?: string; name?: string; data?: { error?: { message?: string } }; responseBody?: string };
+  const msg = (typeof err?.message === "string" && err.message) ? err.message.toLowerCase() : "";
+  if (err?.name === "ApiKeyRequiredError") return { errorKey: ERROR_KEYS.apiKeyMissing, message: err.message ?? "No API key" };
+  if (/api key|invalid key|authentication|unauthorized|401|403/.test(msg)) return { errorKey: ERROR_KEYS.apiKeyInvalid, message: err?.message ?? "Invalid API key" };
+  if (/not found|model.*invalid|404|does not exist/.test(msg)) return { errorKey: ERROR_KEYS.modelNotFound, message: err?.message ?? "Model not found" };
+  if (/rate limit|quota|429|too many requests/.test(msg)) return { errorKey: ERROR_KEYS.rateLimit, message: err?.message ?? "Rate limit" };
+  const fallback = extractUserFacingErrorMessage(error);
+  return { message: fallback };
+}
 import { calculateCostCents } from "../llm/pricing";
 import { buildChiefOfStaff } from "../agents/chief-of-staff";
 import { resolveApprovedDispatchTools } from "../agents/resolve-approved-dispatch";
@@ -33,7 +59,7 @@ import { auth } from "../auth";
 
 /**
  * Extract a user-facing error message from LLM/API errors (e.g. APICallError).
- * Surfaces provider messages like "model 'llama3.1' not found" instead of generic stack traces.
+ * Surfaces provider messages like "model 'llama3.1:8b' not found" instead of generic stack traces.
  */
 function extractUserFacingErrorMessage(error: unknown): string {
   const err = error as {
@@ -118,10 +144,14 @@ function wrapStreamWithErrorChunk(
           controller.enqueue(value);
         }
       } catch (err) {
+        const payload = getErrorPayload(err);
+        const errorText = payload.errorKey
+          ? JSON.stringify({ errorKey: payload.errorKey, message: payload.message })
+          : payload.message;
         try {
           controller.enqueue({
             type: "error",
-            errorText: onError(err),
+            errorText,
           } as Record<string, unknown>);
         } catch {
           // ignore enqueue after close
@@ -253,7 +283,11 @@ chatApp.post("/api/chat", async (c) => {
     projectId?: string;
   }>();
 
-  const { messages, mode: modeOverride = "auto" } = body;
+  const { messages: rawMessages, mode: modeOverride = "auto" } = body;
+  const messages: UIMessage[] = rawMessages.map((m) => {
+    const parts = m.parts?.length ? m.parts : [{ type: "text" as const, text: "" }];
+    return { ...m, parts };
+  });
   let chatId = body.chatId;
   const requestProjectId = body.projectId ?? null;
 
@@ -310,7 +344,7 @@ chatApp.post("/api/chat", async (c) => {
     resolved = await resolveUserModel(user.id);
   } catch (err) {
     if (err instanceof ApiKeyRequiredError) {
-      return c.json({ error: err.message }, 400);
+      return c.json({ errorKey: ERROR_KEYS.apiKeyMissing, error: err.message }, 400);
     }
     throw err;
   }
@@ -408,7 +442,7 @@ chatApp.post("/api/chat", async (c) => {
       extractUserFacingErrorMessage
     );
     return createUIMessageStreamResponse({
-      stream: streamWithErrorHandling,
+      stream: streamWithErrorHandling as ReadableStream<UIMessageChunk>,
       headers: { "X-Chat-Id": chatId! },
     });
   }
@@ -466,7 +500,12 @@ chatApp.post("/api/chat", async (c) => {
   return result.toUIMessageStreamResponse({
     sendReasoning: false,
     headers: { "X-Chat-Id": chatId },
-    onError: extractUserFacingErrorMessage,
+    onError: (err) => {
+      const payload = getErrorPayload(err);
+      return payload.errorKey
+        ? JSON.stringify({ errorKey: payload.errorKey, message: payload.message })
+        : payload.message;
+    },
     onFinish: async ({ messages: updatedMessages }) => {
       await db
         .update(conversations)

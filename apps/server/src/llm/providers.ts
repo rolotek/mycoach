@@ -117,12 +117,16 @@ export async function resolveUserModel(
   userId: string,
   agentPreferredModel?: string | null
 ): Promise<ResolvedModel> {
-  const prefixedModelId =
+  let prefixedModelId =
     agentPreferredModel ??
     (await db.select().from(userSettings).where(eq(userSettings.userId, userId)))
       ?.[0]?.preferredModel ??
     process.env.COACH_CHAT_MODEL ??
-    `ollama:${process.env.OLLAMA_MODEL ?? "llama3.1"}`;
+    `ollama:${process.env.OLLAMA_MODEL ?? "llama3.1:8b"}`;
+
+  if (prefixedModelId === "ollama:llama3.1") {
+    prefixedModelId = "ollama:llama3.1:8b";
+  }
 
   const colonIndex = prefixedModelId.indexOf(":");
   const provider =
@@ -227,7 +231,7 @@ export function getAvailableProviders() {
       requiresApiKey: false,
       envVar: null,
       models: [
-        { id: "ollama:llama3.1", name: "Llama 3.1" },
+        { id: "ollama:llama3.1:8b", name: "Llama 3.1 8B" },
         { id: "ollama:mistral", name: "Mistral" },
       ],
     },

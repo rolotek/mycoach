@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -24,17 +25,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/page-header";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
-const PROVIDERS = [
-  { id: "anthropic", name: "Anthropic", placeholder: "sk-ant-..." },
-  { id: "openai", name: "OpenAI", placeholder: "sk-..." },
-  { id: "google", name: "Google (Gemini)", placeholder: "AIza..." },
-] as const;
-
-const PROVIDER_NAME_BY_ID: Record<string, string> = Object.fromEntries(
-  PROVIDERS.map((p) => [p.id, p.name])
-);
+const PROVIDER_PLACEHOLDERS: Record<string, string> = {
+  anthropic: "sk-ant-...",
+  openai: "sk-...",
+  google: "AIza...",
+};
 
 export default function SettingsPage() {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
   const utils = trpc.useUtils();
   const { data: settings, isLoading: settingsLoading } = trpc.settings.get.useQuery();
   const { data: providers = [] } = trpc.llm.listProviders.useQuery();
@@ -126,7 +125,13 @@ export default function SettingsPage() {
   }
 
   function handleDeleteKey(provider: "anthropic" | "openai" | "google") {
-    if (confirm(`Remove saved ${provider === "anthropic" ? "Anthropic" : "OpenAI"} key?`)) {
+    const key =
+      provider === "anthropic"
+        ? "removeKeyConfirmAnthropic"
+        : provider === "openai"
+          ? "removeKeyConfirmOpenai"
+          : "removeKeyConfirmGoogle";
+    if (confirm(t(key))) {
       deleteKeyMutation.mutate({ provider });
     }
   }
@@ -143,25 +148,24 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-6 p-4 md:p-6">
       <PageHeader
-        title="Settings"
-        description="API keys, model selection, budget, and usage."
+        title={t("title")}
+        description={t("description")}
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>API Keys</CardTitle>
-          <CardDescription>
-            Add your own API keys to use your accounts with Anthropic and OpenAI.
-          </CardDescription>
+          <CardTitle>{t("apiKeys")}</CardTitle>
+          <CardDescription>{t("apiKeysDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {PROVIDERS.map(({ id, name, placeholder }) => {
+          {providers.map((p) => {
+            const id = p.id;
             const keyRow = apiKeys.find((k) => k.provider === id);
             const status = keyStatus[id] ?? { saving: false, success: false, error: null };
             return (
               <div key={id} className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
                 <div className="flex-1 space-y-2">
-                  <Label>{name}</Label>
+                  <Label>{p.name}</Label>
                   {keyRow ? (
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm text-muted-foreground">
@@ -174,14 +178,14 @@ export default function SettingsPage() {
                         onClick={() => handleDeleteKey(id as "anthropic" | "openai" | "google")}
                         disabled={deleteKeyMutation.isPending}
                       >
-                        Delete
+                        {tCommon("delete")}
                       </Button>
                     </div>
                   ) : (
                     <div className="flex gap-2">
                       <Input
                         type="password"
-                        placeholder={placeholder}
+                        placeholder={PROVIDER_PLACEHOLDERS[id] ?? "..."}
                         value={keyInputs[id] ?? ""}
                         onChange={(e) =>
                           setKeyInputs((prev) => ({ ...prev, [id]: e.target.value }))
@@ -195,7 +199,7 @@ export default function SettingsPage() {
                         {status.saving ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          "Save & Verify"
+                          t("saveVerify")
                         )}
                       </Button>
                     </div>
@@ -203,7 +207,7 @@ export default function SettingsPage() {
                 </div>
                 {status.success && (
                   <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-500">
-                    <CheckCircle2 className="h-4 w-4" /> Verified
+                    <CheckCircle2 className="h-4 w-4" /> {t("verified")}
                   </span>
                 )}
                 {status.error && (
@@ -220,18 +224,15 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>LLM Configuration</CardTitle>
-          <CardDescription>
-            Select provider and model for coaching and agents. You can also set per-agent models on
-            the Agents page.
-          </CardDescription>
+          <CardTitle>{t("llmConfig")}</CardTitle>
+          <CardDescription>{t("llmConfigDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="provider">Provider</Label>
+            <Label htmlFor="provider">{t("provider")}</Label>
             <Select value={selectedProvider} onValueChange={setSelectedProvider}>
               <SelectTrigger id="provider" className="w-full">
-                <SelectValue placeholder="Select provider" />
+                <SelectValue placeholder={t("selectProvider")} />
               </SelectTrigger>
               <SelectContent>
                 {providers.map((p) => (
@@ -243,10 +244,10 @@ export default function SettingsPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="model">Model</Label>
+            <Label htmlFor="model">{t("model")}</Label>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger id="model" className="w-full">
-                <SelectValue placeholder="Select model" />
+                <SelectValue placeholder={t("selectModel")} />
               </SelectTrigger>
               <SelectContent>
                 {models.map((m) => (
@@ -258,27 +259,25 @@ export default function SettingsPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="budget">Monthly budget ($)</Label>
+            <Label htmlFor="budget">{t("budget")}</Label>
             <Input
               id="budget"
               type="number"
               min={0}
               step={1}
-              placeholder="No limit"
+              placeholder={t("noLimit")}
               value={monthlyBudgetDollars}
               onChange={(e) => setMonthlyBudgetDollars(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Set a monthly spending limit in dollars. Leave empty for no limit. We also recommend setting a budget on each provider's settings or billing page (Anthropic, OpenAI, Google).
-            </p>
+            <p className="text-xs text-muted-foreground">{t("budgetHelp")}</p>
           </div>
         </CardContent>
         <CardFooter className="flex items-center gap-4">
           <Button onClick={handleSave} disabled={saveStatus === "saving"}>
-            {saveStatus === "saving" ? "Saving…" : "Save"}
+            {saveStatus === "saving" ? t("saving") : tCommon("save")}
           </Button>
           {saveStatus === "saved" && (
-            <span className="text-sm text-muted-foreground">Saved.</span>
+            <span className="text-sm text-muted-foreground">{t("saved")}</span>
           )}
           {saveStatus === "error" && saveError && (
             <span className="text-sm text-destructive" role="alert">
@@ -290,11 +289,8 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Usage this month</CardTitle>
-          <CardDescription>
-            Estimated cost from token usage (current period). This is informational only; rely on
-            each provider's billing or usage settings for actual charges.
-          </CardDescription>
+          <CardTitle>{t("usageThisMonth")}</CardTitle>
+          <CardDescription>{t("usageDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {usageLoading ? (
@@ -315,7 +311,7 @@ export default function SettingsPage() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   {usageSummary.byProvider.map(({ provider, totalCostCents }) => (
                     <span key={provider}>
-                      {PROVIDER_NAME_BY_ID[provider] ?? provider}: $
+                      {providers.find((x) => x.id === provider)?.name ?? provider}: $
                       {(totalCostCents / 10000).toFixed(2)}
                     </span>
                   ))}
@@ -339,11 +335,11 @@ export default function SettingsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left">
-                        <th className="py-2 pr-4">Model</th>
-                        <th className="py-2 pr-4">Requests</th>
-                        <th className="py-2 pr-4">Input</th>
-                        <th className="py-2 pr-4">Output</th>
-                        <th className="py-2">Est. cost</th>
+                        <th className="py-2 pr-4">{t("modelCol")}</th>
+                        <th className="py-2 pr-4">{t("requestsCol")}</th>
+                        <th className="py-2 pr-4">{t("inputCol")}</th>
+                        <th className="py-2 pr-4">{t("outputCol")}</th>
+                        <th className="py-2">{t("estCost")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -364,7 +360,7 @@ export default function SettingsPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No usage this period yet.</p>
+                <p className="text-sm text-muted-foreground">{t("noUsageYet")}</p>
               )}
             </>
           ) : null}

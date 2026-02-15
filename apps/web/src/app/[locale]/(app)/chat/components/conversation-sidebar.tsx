@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { RotateCcw, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -10,15 +11,6 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function formatDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  if (diff < 60 * 60 * 1000) return "Just now";
-  if (diff < 24 * 60 * 60 * 1000) return "Today";
-  if (diff < 7 * 24 * 60 * 60 * 1000) return "This week";
-  return date.toLocaleDateString();
-}
 
 export function ConversationSidebar({
   activeChatId,
@@ -29,8 +21,20 @@ export function ConversationSidebar({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const t = useTranslations("chat");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [coachingId, setCoachingId] = useState<string | null>(null);
+
+  function formatDate(d: Date | string): string {
+    const date = typeof d === "string" ? new Date(d) : d;
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    if (diff < 60 * 60 * 1000) return tCommon("justNow");
+    if (diff < 24 * 60 * 60 * 1000) return tCommon("today");
+    if (diff < 7 * 24 * 60 * 60 * 1000) return tCommon("thisWeek");
+    return date.toLocaleDateString();
+  }
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -65,7 +69,7 @@ export function ConversationSidebar({
 
   const handleReset = () => {
     if (!coachingId) return;
-    if (!window.confirm("Reset coaching conversation? Your memory and facts will be preserved.")) return;
+    if (!window.confirm(t("resetConfirm"))) return;
     resetMut.mutate({ id: coachingId });
   };
 
@@ -85,7 +89,7 @@ export function ConversationSidebar({
                 onClick={() => setOpen(false)}
                 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
               >
-                Coaching
+                {t("coaching")}
               </Link>
               <Button
                 type="button"
@@ -93,7 +97,7 @@ export function ConversationSidebar({
                 size="icon"
                 className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
                 onClick={handleReset}
-                aria-label="Reset coaching"
+                aria-label={t("resetCoaching")}
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
@@ -107,30 +111,30 @@ export function ConversationSidebar({
       {/* Recent tasks */}
       <div className="flex flex-1 flex-col overflow-hidden p-2">
         <span className="mb-1 px-2 text-xs font-medium text-muted-foreground">
-          Recent Tasks
+          {t("recentTasks")}
         </span>
         {!coachingId || tasksLoading ? (
           <Skeleton className="h-9 w-full" />
         ) : (taskThreads?.length ?? 0) === 0 ? (
-          <p className="px-2 text-sm text-muted-foreground">No tasks yet</p>
+          <p className="px-2 text-sm text-muted-foreground">{t("noTasksYet")}</p>
         ) : (
           <ScrollArea className="flex-1">
             <div className="flex flex-col gap-0.5">
-              {(taskThreads ?? []).map((t) => (
+              {(taskThreads ?? []).map((thread) => (
                 <div
-                  key={t.id}
+                  key={thread.id}
                   className={`group flex items-center justify-between gap-1 rounded-lg px-2 py-2 ${
-                    activeChatId === t.id ? "bg-accent" : "hover:bg-accent/50"
+                    activeChatId === thread.id ? "bg-accent" : "hover:bg-accent/50"
                   }`}
                 >
                   <Link
-                    href={`/chat/${t.id}`}
+                    href={`/chat/${thread.id}`}
                     onClick={() => setOpen(false)}
                     className="min-w-0 flex-1 truncate text-sm text-foreground"
                   >
-                    <span className="block truncate">{t.title || "Task"}</span>
+                    <span className="block truncate">{thread.title || t("task")}</span>
                     <span className="text-xs text-muted-foreground">
-                      {formatDate(t.updatedAt)}
+                      {formatDate(thread.updatedAt)}
                     </span>
                   </Link>
                   <Button
@@ -139,11 +143,11 @@ export function ConversationSidebar({
                     size="icon"
                     className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                     onClick={() => {
-                      if (window.confirm("Delete this task thread?")) {
-                        deleteMut.mutate({ id: t.id });
+                      if (window.confirm(t("deleteTaskConfirm"))) {
+                        deleteMut.mutate({ id: thread.id });
                       }
                     }}
-                    aria-label="Delete task thread"
+                    aria-label={t("deleteTaskThread")}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -163,7 +167,7 @@ export function ConversationSidebar({
       </div>
       <Sheet open={isOpen} onOpenChange={setOpen}>
         <SheetContent side="left" className="flex w-64 flex-col p-0">
-          <SheetTitle className="sr-only">Conversations</SheetTitle>
+          <SheetTitle className="sr-only">{t("conversations")}</SheetTitle>
           <div className="flex h-full flex-col">{content}</div>
         </SheetContent>
       </Sheet>

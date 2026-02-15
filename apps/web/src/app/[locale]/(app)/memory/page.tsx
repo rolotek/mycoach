@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Pencil, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,11 +53,14 @@ export default function MemoryPage() {
     "personal",
   ];
 
+  const t = useTranslations("memory");
+  const tCommon = useTranslations("common");
+
   return (
     <div className="max-w-3xl space-y-6 p-4 md:p-6">
       <PageHeader
-        title="What I Know About You"
-        description="Facts extracted from our conversations. You can edit or remove any."
+        title={t("title")}
+        description={t("description")}
       />
 
       {isLoading ? (
@@ -67,7 +71,7 @@ export default function MemoryPage() {
         </div>
       ) : Object.keys(byCategory).length === 0 ? (
         <p className="text-muted-foreground">
-          No facts recorded yet. Start a coaching conversation and I&apos;ll learn about you.
+          {t("noFactsYet")}
         </p>
       ) : (
         <div className="space-y-6">
@@ -102,7 +106,7 @@ export default function MemoryPage() {
                                   setEditingId(null);
                                 }}
                               >
-                                Save
+                                {tCommon("save")}
                               </Button>
                               <Button
                                 size="sm"
@@ -112,7 +116,7 @@ export default function MemoryPage() {
                                   setEditText("");
                                 }}
                               >
-                                Cancel
+                                {tCommon("cancel")}
                               </Button>
                             </div>
                           </div>
@@ -157,11 +161,7 @@ export default function MemoryPage() {
                                 size="icon"
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                                 onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      "Remove this fact from your profile?"
-                                    )
-                                  ) {
+                                  if (window.confirm(t("removeFactConfirm"))) {
                                     deleteMut.mutate({ id: f.id });
                                   }
                                 }}

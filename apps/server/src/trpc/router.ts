@@ -251,7 +251,7 @@ const llmRouter = t.router({
       id: "ollama",
       name: "Ollama (Local)",
       models: [
-        { id: "ollama:llama3.1", name: "Llama 3.1", providerId: "ollama" },
+        { id: "ollama:llama3.1:8b", name: "Llama 3.1 8B", providerId: "ollama" },
       ],
     },
   ]),

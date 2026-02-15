@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -43,6 +44,9 @@ export default function ProjectsPage() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
 
+  const t = useTranslations("projects");
+  const tCommon = useTranslations("common");
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
@@ -55,42 +59,42 @@ export default function ProjectsPage() {
   return (
     <div className="max-w-3xl space-y-6 p-4 md:p-6">
       <PageHeader
-        title="Projects"
-        description="Create projects to scope coaching and tasks (e.g. improve NDA templates, write a novel, onboarding plan)."
+        title={t("title")}
+        description={t("description")}
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                New project
+                {t("newProject")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>New project</DialogTitle>
+                <DialogTitle>{t("newProjectTitle")}</DialogTitle>
                 <DialogDescription>
-                  Add a name and optional description for your project.
+                  {t("newProjectDesc")}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name">{t("name")}</Label>
                   <Input
                     id="name"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="e.g. Improve NDA templates"
+                    placeholder={t("placeholderName")}
                     required
                     className="mt-1"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="desc">Description (optional)</Label>
+                  <Label htmlFor="desc">{t("descriptionOptional")}</Label>
                   <Textarea
                     id="desc"
                     value={newDesc}
                     onChange={(e) => setNewDesc(e.target.value)}
-                    placeholder="Brief description of the project"
+                    placeholder={t("placeholderDesc")}
                     rows={3}
                     className="mt-1"
                   />
@@ -101,10 +105,10 @@ export default function ProjectsPage() {
                     variant="outline"
                     onClick={() => setOpen(false)}
                   >
-                    Cancel
+                    {tCommon("cancel")}
                   </Button>
                   <Button type="submit" disabled={createMut.isPending}>
-                    {createMut.isPending ? "Creating..." : "Create"}
+                    {createMut.isPending ? t("creating") : tCommon("create")}
                   </Button>
                 </div>
               </form>
@@ -120,8 +124,7 @@ export default function ProjectsPage() {
         </div>
       ) : !projectList?.length ? (
         <p className="text-muted-foreground">
-          No projects yet. Create one to scope chat and tasks (documents, links,
-          milestones).
+          {t("noProjectsYet")}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -138,11 +141,11 @@ export default function ProjectsPage() {
                         </p>
                       )}
                       <Badge variant="secondary" className="mt-1">
-                        {p.status ?? "active"}
+                        {p.status ?? t("active")}
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0">
-                      Due: {formatDate(p.dueDate)}
+                      {t("due")}: {formatDate(p.dueDate)}
                     </span>
                   </CardContent>
                 </Card>

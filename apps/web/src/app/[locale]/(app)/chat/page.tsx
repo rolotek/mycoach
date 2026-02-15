@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 
 export default function ChatPage() {
+  const t = useTranslations("chat");
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId") ?? undefined;
@@ -25,7 +27,7 @@ export default function ChatPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <p className="text-muted-foreground">
-        {getOrCreate.isPending ? "Loading coaching session..." : "Redirecting..."}
+        {getOrCreate.isPending ? t("loadingSession") : t("redirecting")}
       </p>
     </div>
   );

@@ -1,9 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 const MODES = [
-  { value: "auto", label: "Auto" },
-  { value: "coaching", label: "Coaching" },
-  { value: "task", label: "Task" },
+  { value: "auto", labelKey: "modeAuto" as const },
+  { value: "coaching", labelKey: "modeCoaching" as const },
+  { value: "task", labelKey: "modeTask" as const },
 ] as const;
 
 export function ModeToggle({
@@ -13,6 +15,7 @@ export function ModeToggle({
   mode: string;
   onChange: (mode: string) => void;
 }) {
+  const t = useTranslations("chat");
   return (
     <div className="flex gap-1 rounded-lg border border-border p-1">
       {MODES.map((m) => (
@@ -26,7 +29,7 @@ export function ModeToggle({
               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           }`}
         >
-          {m.label}
+          {t(m.labelKey)}
         </button>
       ))}
     </div>

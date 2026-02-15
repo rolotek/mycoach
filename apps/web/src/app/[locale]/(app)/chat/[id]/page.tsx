@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import type { UIMessage } from "ai";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Menu } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -15,6 +16,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatIdPage() {
+  const t = useTranslations("chat");
+  const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
   const params = useParams();
   const searchParams = useSearchParams();
   const chatId = params.id as string;
@@ -101,11 +105,11 @@ export default function ChatIdPage() {
                 href="/chat"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                Back to coaching
+                {t("backToCoaching")}
               </Link>
             )}
             <h1 className="text-lg font-medium text-foreground">
-              {isTaskThread ? (conv?.title ?? "Task") : "Coaching"}
+              {isTaskThread ? (conv?.title ?? t("task")) : t("coaching")}
             </h1>
           </div>
           {!isTaskThread && <ModeToggle mode={mode} onChange={setMode} />}
@@ -117,8 +121,12 @@ export default function ChatIdPage() {
           >
             {(() => {
               try {
-                const parsed = JSON.parse(chatError.message) as { error?: string };
+                const parsed = JSON.parse(chatError.message) as { errorKey?: string; error?: string; message?: string };
+                if (parsed?.errorKey && typeof parsed.errorKey === "string") {
+                  return tErrors(parsed.errorKey.replace(/^errors\./, ""));
+                }
                 if (parsed?.error) return parsed.error;
+                if (parsed?.message) return parsed.message;
               } catch {
                 // not JSON, use message as-is
               }
@@ -130,7 +138,7 @@ export default function ChatIdPage() {
                 onClick={() => clearError()}
                 className="ml-2 underline focus:outline-none"
               >
-                Dismiss
+                {tCommon("dismiss")}
               </button>
             )}
           </div>

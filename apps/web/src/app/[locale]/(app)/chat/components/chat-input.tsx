@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +17,7 @@ export function ChatInput({
   handleSubmit: (e: React.FormEvent) => void;
   status: string;
 }) {
+  const t = useTranslations("chat");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isStreaming = status === "streaming" || status === "submitted";
 
@@ -41,7 +43,7 @@ export function ChatInput({
               }
             }
           }}
-          placeholder="Message your coach..."
+          placeholder={t("placeholder")}
           rows={1}
           className="max-h-[120px] min-h-[40px] flex-1 resize-none focus-visible:ring-1 focus-visible:ring-ring"
           disabled={isStreaming}
@@ -50,7 +52,7 @@ export function ChatInput({
           type="submit"
           size="icon"
           disabled={!input.trim() || isStreaming}
-          aria-label="Send"
+          aria-label={t("send")}
         >
           <Send className="h-4 w-4" />
         </Button>

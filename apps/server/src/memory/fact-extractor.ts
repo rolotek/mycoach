@@ -44,7 +44,7 @@ export async function extractFacts(
 
   const modelId =
     process.env.COACH_FACT_MODEL ??
-    `ollama:${process.env.OLLAMA_MODEL || "llama3.1"}`;
+    `ollama:${process.env.OLLAMA_MODEL || "llama3.1:8b"}`;
 
   try {
     const result = await generateText({

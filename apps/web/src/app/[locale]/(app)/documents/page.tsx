@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Upload, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,7 @@ async function uploadDocument(file: File) {
 }
 
 export default function DocumentsPage() {
+  const t = useTranslations("documents");
   const utils = trpc.useUtils();
   const { data: documents, isLoading } = trpc.document.list.useQuery();
   const deleteMut = trpc.document.delete.useMutation({
@@ -51,12 +53,12 @@ export default function DocumentsPage() {
         await uploadDocument(file);
         utils.document.list.invalidate();
       } catch (e) {
-        setUploadError(e instanceof Error ? e.message : "Upload failed");
+        setUploadError(e instanceof Error ? e.message : t("uploadFailed"));
       } finally {
         setUploading(false);
       }
     },
-    [utils]
+    [utils, t]
   );
 
   const onDrop = useCallback(
@@ -81,8 +83,8 @@ export default function DocumentsPage() {
   return (
     <div className="max-w-3xl space-y-6 p-4 md:p-6">
       <PageHeader
-        title="Documents"
-        description="Upload documents to inform your coaching sessions. Max 10MB per file."
+        title={t("title")}
+        description={t("description")}
       />
 
       <div
@@ -108,16 +110,14 @@ export default function DocumentsPage() {
           htmlFor="doc-upload"
           className="mt-2 block cursor-pointer text-muted-foreground hover:text-foreground"
         >
-          {uploading
-            ? "Uploading..."
-            : "Drop a file here or click to select (PDF, DOCX, TXT)"}
+          {uploading ? t("uploading") : t("dropOrClick")}
         </label>
         {uploadError && (
           <p className="mt-2 text-sm text-destructive">{uploadError}</p>
         )}
       </div>
 
-      <h2 className="text-lg font-medium">Your documents</h2>
+      <h2 className="text-lg font-medium">{t("yourDocuments")}</h2>
       {isLoading ? (
         <div className="space-y-2">
           <Skeleton className="h-14 w-full" />
@@ -125,7 +125,7 @@ export default function DocumentsPage() {
         </div>
       ) : !documents?.length ? (
         <p className="text-muted-foreground">
-          No documents uploaded yet. Upload PDFs, Word documents, or text files to give your coach more context.
+          {t("noDocumentsYet")}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -161,7 +161,7 @@ export default function DocumentsPage() {
                     size="icon"
                     className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
                     onClick={() => {
-                      if (window.confirm("Delete this document?")) {
+                      if (window.confirm(t("deleteConfirm"))) {
                         deleteMut.mutate({ id: doc.id });
                       }
                     }}

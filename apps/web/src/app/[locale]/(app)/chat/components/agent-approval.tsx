@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 export function AgentApprovalCard({
@@ -15,18 +16,19 @@ export function AgentApprovalCard({
   onDeny: () => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations("chat");
   return (
     <div className="rounded-lg border-2 border-primary/20 bg-primary/5 px-4 py-3">
       <div className="text-sm font-medium text-foreground">
-        Chief of Staff suggests: Delegate to {agentName}
+        {t("delegateTo", { agentName })}
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{task}</p>
       <div className="mt-3 flex gap-2">
         <Button size="sm" onClick={onApprove} disabled={disabled}>
-          Approve
+          {t("approve")}
         </Button>
         <Button size="sm" variant="outline" onClick={onDeny} disabled={disabled}>
-          Deny
+          {t("reject")}
         </Button>
       </div>
     </div>
